@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indian Lappa League — Player Profile</title>
+<style>
+  :root {
+    --bg: #0A1628;
+    --surface: #132237;
+    --surface-alt: #1A2D47;
+    --text: #FFFFFF;
+    --text-secondary: #8899AA;
+    --gold: #FFD700;
+    --green: #00C853;
+    --red: #FF1744;
+    --grey: #607D8B;
+    --blue: #2979FF;
+    --orange: #FF6D00;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Navigation Bar */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 12px;
+  }
+
+  .back-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .back-btn:hover {
+    background: var(--surface-alt);
+    color: var(--text);
+  }
+
+  .nav-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .nav-share {
+    margin-left: auto;
+  }
+
+  /* Player Card */
+  .player-card {
+    margin: 0 16px;
+    padding: 24px 20px 20px;
+    background: linear-gradient(135deg, var(--surface), var(--surface-alt));
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .player-card::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(circle, rgba(41, 121, 255, 0.12), transparent 70%);
+    pointer-events: none;
+  }
+
+  .player-card::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: -20px;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.06), transparent 70%);
+    pointer-events: none;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .player-avatar-lg {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2979FF, #1565C0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--bg);
+    border: 3px solid rgba(41, 121, 255, 0.4);
+    box-shadow: 0 4px 20px rgba(41, 121, 255, 0.3);
+    flex-shrink: 0;
+  }
+
+  .player-info {
+    flex: 1;
+  }
+
+  .player-info .name {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+  }
+
+  .player-info .meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .rank-badge {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--gold);
+    background: rgba(255, 215, 0, 0.15);
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .rank-badge.top3 {
+    color: var(--gold);
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+  }
+
+  .accuracy-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--green);
+    background: rgba(0, 200, 83, 0.12);
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+
+  /* Stat Tiles */
+  .stat-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .stat-tile {
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .stat-tile .value {
+    font-size: 20px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+
+  .stat-tile .value.gold { color: var(--gold); }
+  .stat-tile .value.green { color: var(--green); }
+  .stat-tile .value.blue { color: var(--blue); }
+
+  .stat-tile .label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  /* Section */
+  .section {
+    margin: 16px 16px 0;
+    padding: 20px;
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title .accent {
+    width: 4px;
+    height: 14px;
+    border-radius: 2px;
+  }
+
+  .accent-blue { background: var(--blue); }
+  .accent-green { background: var(--green); }
+  .accent-gold { background: var(--gold); }
+  .accent-red { background: var(--red); }
+
+  /* Points Over Time Chart */
+  .chart-container {
+    position: relative;
+    height: 160px;
+  }
+
+  .chart-container svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .chart-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 4px 0;
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    justify-content: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* Donut Chart */
+  .donut-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .donut-chart {
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+  }
+
+  .donut-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .donut-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .donut-stat .color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .donut-stat .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .donut-stat .stat-val {
+    font-size: 14px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Prize Earnings */
+  .earnings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .earning-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 14px 12px;
+  }
+
+  .earning-card .e-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .earning-card .e-value {
+    font-size: 18px;
+    font-weight: 900;
+    margin-top: 4px;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .earning-card .e-detail {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .earning-total {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 215, 0, 0.02));
+    border: 1px solid rgba(255, 215, 0, 0.15);
+  }
+
+  /* Match History */
+  .match-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .match-row {
+    display: grid;
+    grid-template-columns: 24px 1fr auto 40px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .match-num {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  .match-teams {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .match-teams .matchup {
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .match-teams .predicted {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .match-teams .predicted .pick {
+    font-weight: 700;
+    color: var(--blue);
+  }
+
+  .match-result {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .result-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .result-icon.correct {
+    background: rgba(0, 200, 83, 0.15);
+    color: var(--green);
+    border: 1px solid rgba(0, 200, 83, 0.3);
+  }
+
+  .result-icon.incorrect {
+    background: rgba(255, 23, 68, 0.15);
+    color: var(--red);
+    border: 1px solid rgba(255, 23, 68, 0.3);
+  }
+
+  .result-icon.draw {
+    background: rgba(96, 125, 139, 0.15);
+    color: var(--grey);
+    border: 1px solid rgba(96, 125, 139, 0.3);
+  }
+
+  .match-pts {
+    font-size: 14px;
+    font-weight: 800;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .match-pts.correct { color: var(--green); }
+  .match-pts.incorrect { color: var(--red); }
+  .match-pts.draw { color: var(--grey); }
+
+  /* Team logos (emoji placeholders for IPL teams) */
+  .team-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+    margin-right: 4px;
+  }
+
+  .t-csk { background: #FFD700; color: #0A1628; }
+  .t-mi { background: #004BA0; }
+  .t-rcb { background: #D4213D; }
+  .t-kkr { background: #3A225D; }
+  .t-dc { background: #004C93; }
+  .t-srh { background: #FF822A; }
+  .t-pbks { background: #ED1B24; }
+  .t-rr { background: #254AA5; }
+  .t-gt { background: #1C1C2B; }
+  .t-lsg { background: #A72056; }
+
+  .footer-spacer { height: 32px; }
+
+  /* Head to head teaser */
+  .h2h-teaser {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px dashed rgba(255,255,255,0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .h2h-teaser:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  .h2h-teaser .h2h-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+
+  .h2h-teaser .h2h-icon {
+    font-size: 18px;
+  }
+
+  /* Team prediction heatmap */
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+
+  .heatmap-cell {
+    border-radius: 8px;
+    padding: 10px 4px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .heatmap-cell .team-abbr {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+
+  .heatmap-cell .pred-count {
+    font-size: 14px;
+    font-weight: 900;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .heat-high {
+    background: rgba(0, 200, 83, 0.2);
+    border-color: rgba(0, 200, 83, 0.15);
+    color: var(--green);
+  }
+
+  .heat-med {
+    background: rgba(41, 121, 255, 0.15);
+    border-color: rgba(41, 121, 255, 0.1);
+    color: var(--blue);
+  }
+
+  .heat-low {
+    background: rgba(255,255,255,0.03);
+    color: var(--text-secondary);
+  }
+
+  .heat-none {
+    background: rgba(255,255,255,0.01);
+    color: rgba(255,255,255,0.2);
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<div class="nav-bar">
+  <div class="back-btn">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </div>
+  <span class="nav-title">Player Profile</span>
+  <div class="nav-share back-btn" title="Share Profile">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+  </div>
+</div>
+
+<!-- Player Card (Trading Card Style) -->
+<div class="player-card">
+  <div class="card-top">
+    <div class="player-avatar-lg">RS</div>
+    <div class="player-info">
+      <div class="name">Rajat</div>
+      <div class="meta">
+        <span class="rank-badge top3">&#129352; Rank #2</span>
+        <span class="accuracy-badge">62.5% Acc</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-tiles">
+    <div class="stat-tile">
+      <div class="value gold">55</div>
+      <div class="label">Points</div>
+    </div>
+    <div class="stat-tile">
+      <div class="value green">5</div>
+      <div class="label">Wins</div>
+    </div>
+    <div class="stat-tile">
+      <div class="value" style="color:var(--red)">2</div>
+      <div class="label">Losses</div>
+    </div>
+    <div class="stat-tile">
+      <div class="value blue">1</div>
+      <div class="label">Draws</div>
+    </div>
+  </div>
+</div>
+
+<!-- Points Over Time -->
+<div class="section">
+  <div class="section-title">
+    <div class="accent accent-blue"></div>
+    Points Over Time
+  </div>
+  <div class="chart-container">
+    <svg viewBox="0 0 380 140" xmlns="http://www.w3.org/2000/svg">
+      <!-- Grid -->
+      <line x1="30" y1="10" x2="370" y2="10" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+      <line x1="30" y1="45" x2="370" y2="45" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+      <line x1="30" y1="80" x2="370" y2="80" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+      <line x1="30" y1="115" x2="370" y2="115" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+      <line x1="30" y1="130" x2="370" y2="130" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+      <!-- Y-axis -->
+      <text x="22" y="14" fill="#8899AA" font-size="9" text-anchor="end" font-family="system-ui">60</text>
+      <text x="22" y="49" fill="#8899AA" font-size="9" text-anchor="end" font-family="system-ui">40</text>
+      <text x="22" y="84" fill="#8899AA" font-size="9" text-anchor="end" font-family="system-ui">20</text>
+      <text x="22" y="119" fill="#8899AA" font-size="9" text-anchor="end" font-family="system-ui">10</text>
+      <text x="22" y="134" fill="#8899AA" font-size="9" text-anchor="end" font-family="system-ui">0</text>
+
+      <!-- Group average (dashed) -->
+      <polyline points="57,130 130,105 200,85 270,65" fill="none" stroke="#8899AA" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
+
+      <!-- Player's area fill -->
+      <polygon points="57,130 130,100 200,72 270,48 270,130 57,130" fill="url(#areaGrad)" opacity="0.3"/>
+
+      <!-- Player's line -->
+      <polyline points="57,130 130,100 200,72 270,48" fill="none" stroke="#2979FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Dots -->
+      <circle cx="57" cy="130" r="4" fill="#2979FF"/>
+      <circle cx="130" cy="100" r="4" fill="#2979FF"/>
+      <circle cx="200" cy="72" r="4" fill="#2979FF"/>
+      <circle cx="270" cy="48" r="5" fill="#2979FF" stroke="#0A1628" stroke-width="2"/>
+
+      <!-- Week 3 label -->
+      <text x="270" y="40" fill="#2979FF" font-size="10" text-anchor="middle" font-weight="700" font-family="system-ui">55</text>
+
+      <defs>
+        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2979FF" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#2979FF" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+  <div class="chart-labels">
+    <span>W1</span>
+    <span>W2</span>
+    <span style="color:var(--blue);font-weight:700">W3</span>
+    <span style="opacity:0.3">W4</span>
+    <span style="opacity:0.3">W5</span>
+    <span style="opacity:0.3">W6</span>
+  </div>
+  <div class="chart-legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--blue)"></div>
+      Rajat
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--text-secondary);opacity:0.5"></div>
+      Group Avg
+    </div>
+  </div>
+</div>
+
+<!-- Win/Loss/Draw Donut -->
+<div class="section">
+  <div class="section-title">
+    <div class="accent accent-green"></div>
+    Prediction Breakdown
+  </div>
+  <div class="donut-row">
+    <div class="donut-chart">
+      <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background ring -->
+        <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="16"/>
+        <!-- Draw (1/8 = 12.5%) -->
+        <circle cx="60" cy="60" r="48" fill="none" stroke="#607D8B" stroke-width="16"
+          stroke-dasharray="37.7 263.89" stroke-dashoffset="0" transform="rotate(-90 60 60)" opacity="0.8"/>
+        <!-- Loss (2/8 = 25%) -->
+        <circle cx="60" cy="60" r="48" fill="none" stroke="#FF1744" stroke-width="16"
+          stroke-dasharray="75.4 226.19" stroke-dashoffset="-37.7" transform="rotate(-90 60 60)" opacity="0.8"/>
+        <!-- Win (5/8 = 62.5%) -->
+        <circle cx="60" cy="60" r="48" fill="none" stroke="#00C853" stroke-width="16"
+          stroke-dasharray="188.5 113.1" stroke-dashoffset="-113.1" transform="rotate(-90 60 60)" opacity="0.8"/>
+        <!-- Center text -->
+        <text x="60" y="55" fill="#FFFFFF" font-size="18" text-anchor="middle" font-weight="900" font-family="system-ui">8</text>
+        <text x="60" y="72" fill="#8899AA" font-size="9" text-anchor="middle" font-weight="600" font-family="system-ui">MATCHES</text>
+      </svg>
+    </div>
+    <div class="donut-stats">
+      <div class="donut-stat">
+        <div class="color-dot" style="background:var(--green)"></div>
+        <span class="stat-label">Correct</span>
+        <span class="stat-val" style="color:var(--green)">5</span>
+      </div>
+      <div class="donut-stat">
+        <div class="color-dot" style="background:var(--red)"></div>
+        <span class="stat-label">Incorrect</span>
+        <span class="stat-val" style="color:var(--red)">2</span>
+      </div>
+      <div class="donut-stat">
+        <div class="color-dot" style="background:var(--grey)"></div>
+        <span class="stat-label">No Result</span>
+        <span class="stat-val" style="color:var(--grey)">1</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Team Prediction Heatmap -->
+<div class="section">
+  <div class="section-title">
+    <div class="accent accent-gold"></div>
+    Team Loyalty Map
+  </div>
+  <div class="heatmap-grid">
+    <div class="heatmap-cell heat-high">
+      <div class="team-abbr">CSK</div>
+      <div class="pred-count">4</div>
+    </div>
+    <div class="heatmap-cell heat-med">
+      <div class="team-abbr">MI</div>
+      <div class="pred-count">3</div>
+    </div>
+    <div class="heatmap-cell heat-low">
+      <div class="team-abbr">RCB</div>
+      <div class="pred-count">2</div>
+    </div>
+    <div class="heatmap-cell heat-low">
+      <div class="team-abbr">KKR</div>
+      <div class="pred-count">2</div>
+    </div>
+    <div class="heatmap-cell heat-low">
+      <div class="team-abbr">DC</div>
+      <div class="pred-count">1</div>
+    </div>
+    <div class="heatmap-cell heat-low">
+      <div class="team-abbr">SRH</div>
+      <div class="pred-count">1</div>
+    </div>
+    <div class="heatmap-cell heat-none">
+      <div class="team-abbr">PBKS</div>
+      <div class="pred-count">0</div>
+    </div>
+    <div class="heatmap-cell heat-none">
+      <div class="team-abbr">RR</div>
+      <div class="pred-count">0</div>
+    </div>
+    <div class="heatmap-cell heat-none">
+      <div class="team-abbr">GT</div>
+      <div class="pred-count">0</div>
+    </div>
+    <div class="heatmap-cell heat-none">
+      <div class="team-abbr">LSG</div>
+      <div class="pred-count">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- Prize Earnings -->
+<div class="section">
+  <div class="section-title">
+    <div class="accent accent-gold"></div>
+    Prize Earnings
+  </div>
+  <div class="earnings-grid">
+    <div class="earning-card">
+      <div class="e-label">Weekly Prizes</div>
+      <div class="e-value">&#8377;700</div>
+      <div class="e-detail">1x Winner (Week 2)</div>
+    </div>
+    <div class="earning-card">
+      <div class="e-label">Stage Prizes</div>
+      <div class="e-value">&#8377;0</div>
+      <div class="e-detail">Stage 1 in progress</div>
+    </div>
+    <div class="earning-card earning-total">
+      <div class="e-label">Total Earnings</div>
+      <div class="e-value">&#8377;700</div>
+      <div class="e-detail">Out of &#8377;45,500 pool</div>
+    </div>
+  </div>
+</div>
+
+<!-- Match History -->
+<div class="section">
+  <div class="section-title">
+    <div class="accent accent-red"></div>
+    Match History — Week 3
+  </div>
+  <div class="match-list">
+    <!-- Match 1 - Correct -->
+    <div class="match-row">
+      <div class="match-num">#17</div>
+      <div class="match-teams">
+        <div class="matchup"><span class="team-logo t-csk">C</span> CSK vs MI <span class="team-logo t-mi">M</span></div>
+        <div class="predicted">Picked: <span class="pick">CSK</span> &bull; Won: CSK</div>
+      </div>
+      <div class="match-result">
+        <div class="result-icon correct">&#10003;</div>
+      </div>
+      <div class="match-pts correct">+10</div>
+    </div>
+
+    <!-- Match 2 - Correct -->
+    <div class="match-row">
+      <div class="match-num">#18</div>
+      <div class="match-teams">
+        <div class="matchup"><span class="team-logo t-rcb">R</span> RCB vs KKR <span class="team-logo t-kkr">K</span></div>
+        <div class="predicted">Picked: <span class="pick">KKR</span> &bull; Won: KKR</div>
+      </div>
+      <div class="match-result">
+        <div class="result-icon correct">&#10003;</div>
+      </div>
+      <div class="match-pts correct">+10</div>
+    </div>
+
+    <!-- Match 3 - Incorrect -->
+    <div class="match-row">
+      <div class="match-num">#19</div>
+      <div class="match-teams">
+        <div class="matchup"><span class="team-logo t-dc">D</span> DC vs SRH <span class="team-logo t-srh">S</span></div>
+        <div class="predicted">Picked: <span class="pick">DC</span> &bull; Won: SRH</div>
+      </div>
+      <div class="match-result">
+        <div class="result-icon incorrect">&#10007;</div>
+      </div>
+      <div class="match-pts incorrect">0</div>
+    </div>
+
+    <!-- Match 4 - Correct -->
+    <div class="match-row">
+      <div class="match-num">#20</div>
+      <div class="match-teams">
+        <div class="matchup"><span class="team-logo t-gt">G</span> GT vs LSG <span class="team-logo t-lsg">L</span></div>
+        <div class="predicted">Picked: <span class="pick">GT</span> &bull; Won: GT</div>
+      </div>
+      <div class="match-result">
+        <div class="result-icon correct">&#10003;</div>
+      </div>
+      <div class="match-pts correct">+10</div>
+    </div>
+
+    <!-- Match 5 - Draw -->
+    <div class="match-row">
+      <div class="match-num">#21</div>
+      <div class="match-teams">
+        <div class="matchup"><span class="team-logo t-pbks">P</span> PBKS vs RR <span class="team-logo t-rr">R</span></div>
+        <div class="predicted">Picked: <span class="pick">RR</span> &bull; No Result</div>
+      </div>
+      <div class="match-result">
+        <div class="result-icon draw">&#8212;</div>
+      </div>
+      <div class="match-pts draw">+5</div>
+    </div>
+
+    <!-- Match 6 - Correct -->
+    <div class="match-row">
+      <div class="match-num">#22</div>
+      <div class="match-teams">
+        <div class="matchup"><span class="team-logo t-mi">M</span> MI vs RCB <span class="team-logo t-rcb">R</span></div>
+        <div class="predicted">Picked: <span class="pick">MI</span> &bull; Won: MI</div>
+      </div>
+      <div class="match-result">
+        <div class="result-icon correct">&#10003;</div>
+      </div>
+      <div class="match-pts correct">+10</div>
+    </div>
+
+    <!-- Match 7 - Incorrect -->
+    <div class="match-row">
+      <div class="match-num">#23</div>
+      <div class="match-teams">
+        <div class="matchup"><span class="team-logo t-srh">S</span> SRH vs CSK <span class="team-logo t-csk">C</span></div>
+        <div class="predicted">Picked: <span class="pick">SRH</span> &bull; Won: CSK</div>
+      </div>
+      <div class="match-result">
+        <div class="result-icon incorrect">&#10007;</div>
+      </div>
+      <div class="match-pts incorrect">0</div>
+    </div>
+
+    <!-- Match 8 - Correct -->
+    <div class="match-row">
+      <div class="match-num">#24</div>
+      <div class="match-teams">
+        <div class="matchup"><span class="team-logo t-kkr">K</span> KKR vs DC <span class="team-logo t-dc">D</span></div>
+        <div class="predicted">Picked: <span class="pick">CSK</span> &bull; Won: CSK</div>
+      </div>
+      <div class="match-result">
+        <div class="result-icon correct">&#10003;</div>
+      </div>
+      <div class="match-pts correct">+10</div>
+    </div>
+  </div>
+</div>
+
+<!-- Head to Head Teaser -->
+<div class="section">
+  <div class="section-title">
+    <div class="accent accent-blue"></div>
+    Head to Head
+  </div>
+  <div class="h2h-teaser">
+    <span class="h2h-icon">&#9876;&#65039;</span>
+    <span class="h2h-text">Compare with another player</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary)"><polyline points="9 18 15 12 9 6"/></svg>
+  </div>
+</div>
+
+<div class="footer-spacer"></div>
+
+</body>
+</html>

@@ -1,0 +1,124 @@
+// @nimbalyst {"viewport":{"x":0,"y":0,"zoom":1},"positions":{},"entityViewMode":"standard"}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum Role {
+  PARTICIPANT
+  ADMIN
+  FINANCE
+  GRIEVANCE
+  AUDIT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+enum Stage {
+  STAGE_1
+  STAGE_2
+  STAGE_3
+}
+
+enum MatchResult {
+  HOME_WIN
+  AWAY_WIN
+  NO_RESULT
+  PENDING
+}
+
+// ─── Core Models ─────────────────────────────────────────
+
+model Participant {
+  id            Int             @id @default(autoincrement())
+  name          String
+  email         String?         @unique
+  avatarUrl     String?
+  role          Role            @default(PARTICIPANT)
+  paymentStatus PaymentStatus   @default(PENDING)
+  createdAt     DateTime        @default(now())
+  predictions   Prediction[]
+  weeklyResults WeeklyResult[]
+  overrides     ScoreOverride[] @relation("OverriddenByAdmin")
+}
+
+model Match {
+  id          Int          @id @default(autoincrement())
+  matchNumber Int          @unique
+  teamHome    String
+  teamAway    String
+  venue       String?
+  dateTime    DateTime
+  weekNumber  Int
+  stage       Stage
+  result      MatchResult  @default(PENDING)
+  winner      String?
+  createdAt   DateTime     @default(now())
+  week        Week         @relation(fields: [weekNumber], references: [weekNumber])
+  predictions Prediction[]
+}
+
+model Prediction {
+  id              Int             @id @default(autoincrement())
+  participantId   Int
+  matchId         Int
+  predictedWinner String
+  submittedAt     DateTime        @default(now())
+  pointsAwarded   Int             @default(0)
+  isValid         Boolean         @default(true)
+  participant     Participant     @relation(fields: [participantId], references: [id])
+  match           Match           @relation(fields: [matchId], references: [id])
+  overrides       ScoreOverride[]
+
+  @@unique([participantId, matchId])
+}
+
+model Week {
+  id                 Int            @id @default(autoincrement())
+  weekNumber         Int            @unique
+  stage              Stage
+  startDate          DateTime
+  endDate            DateTime
+  submissionDeadline DateTime
+  isActive           Boolean        @default(false)
+  matches            Match[]
+  weeklyResults      WeeklyResult[]
+}
+
+model WeeklyResult {
+  id            Int         @id @default(autoincrement())
+  weekId        Int
+  participantId Int
+  totalPoints   Int
+  wins          Int
+  losses        Int
+  draws         Int
+  rank          Int
+  prizeAmount   Int         @default(0)
+  week          Week        @relation(fields: [weekId], references: [id])
+  participant   Participant @relation(fields: [participantId], references: [id])
+
+  @@unique([weekId, participantId])
+}
+
+model ScoreOverride {
+  id             Int         @id @default(autoincrement())
+  predictionId   Int
+  originalPoints Int
+  newPoints      Int
+  reason         String
+  overriddenBy   Int
+  createdAt      DateTime    @default(now())
+  prediction     Prediction  @relation(fields: [predictionId], references: [id])
+  admin          Participant @relation("OverriddenByAdmin", fields: [overriddenBy], references: [id])
+}
