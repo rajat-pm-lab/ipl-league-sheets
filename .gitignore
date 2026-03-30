@@ -35,3 +35,4 @@ npm-debug.log*
 *.key
 *.pem
 credentials.json
+Private Key IPL JSON/
