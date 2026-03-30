@@ -2,7 +2,14 @@
   "buildCommand": "cd 02-prototype/ill-dashboard && npm install && npm run build",
   "outputDirectory": "02-prototype/ill-dashboard/dist",
   "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/cron/update-results",
+      "schedule": "0 18 * 3-5 *"
+    }
+  ],
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
