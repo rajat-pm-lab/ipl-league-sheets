@@ -7,20 +7,23 @@ const DataContext = createContext(null)
 function rankAndSort(entries, players) {
   const lookup = {}
   players.forEach((p) => { lookup[p.id] = p })
-  return entries
+  const sorted = entries
     .map((d) => ({ ...d, player: lookup[d.playerId] }))
     .sort((a, b) => b.points - a.points || b.wins - a.wins)
-    .map((d, i) => ({ ...d, rank: i + 1 }))
+  return sorted.map((d, i) => ({
+    ...d,
+    rank: i === 0 ? 1 : (d.points === sorted[i - 1].points ? sorted[i - 1].rank : i + 1),
+  }))
 }
 
 function computeWeeklyLeaderboard(weeklyData, weekNum, players) {
   const data = weeklyData[weekNum]
   // If no data yet for this week, show all players at zero (don't blank the screen)
   if (!data || data.length === 0) {
-    return players.map((p, i) => ({
+    return players.map((p) => ({
       playerId: p.id, player: p,
       predicted: 0, played: 0, wins: 0, losses: 0, draws: 0, points: 0,
-      rank: i + 1,
+      rank: 1,
     }))
   }
   return rankAndSort(data, players)
