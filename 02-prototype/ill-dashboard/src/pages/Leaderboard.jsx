@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getWeeklyLeaderboard, getStageLeaderboard, getOverallLeaderboard, STAGES } from '../data/sampleData'
+import { useLeagueData } from '../data/DataContext'
 import Podium from '../components/Podium'
 import LeaderboardTable from '../components/LeaderboardTable'
 import PredictionsView from '../components/PredictionsView'
@@ -8,21 +8,34 @@ import PredictionsView from '../components/PredictionsView'
 const TABS = ['Weekly', 'Stage', 'Overall', 'Picks', 'TRANS']
 
 export default function Leaderboard() {
+  const { data, loading, computeWeeklyLeaderboard, computeStageLeaderboard } = useLeagueData()
   const [activeTab, setActiveTab] = useState('Weekly')
   const [selectedWeek, setSelectedWeek] = useState(1)
   const [selectedStage, setSelectedStage] = useState('STAGE_1')
 
-  let leaderboard = []
-  if (activeTab === 'Weekly') {
-    leaderboard = getWeeklyLeaderboard(selectedWeek)
-  } else if (activeTab === 'Stage') {
-    leaderboard = getStageLeaderboard(selectedStage)
-  } else if (activeTab === 'Overall') {
-    leaderboard = getOverallLeaderboard()
+  if (loading || !data) {
+    return (
+      <div style={{ padding: '60px 16px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <div style={{ fontSize: 14, fontWeight: 600 }}>Loading league data...</div>
+      </div>
+    )
   }
 
-  const currentStageKey = selectedWeek <= 4 ? 'STAGE_1' : selectedWeek <= 8 ? 'STAGE_2' : 'STAGE_3'
-  const currentStage = STAGES[currentStageKey]
+  const { players, stages, weeklyData } = data
+
+  let leaderboard = []
+  if (activeTab === 'Weekly') {
+    leaderboard = computeWeeklyLeaderboard(weeklyData, selectedWeek, players)
+  } else if (activeTab === 'Stage') {
+    const stageWeeks = stages[selectedStage]?.weeks || []
+    leaderboard = computeStageLeaderboard(weeklyData, stageWeeks, players)
+  } else if (activeTab === 'Overall') {
+    const allWeeks = Object.keys(stages).flatMap((s) => stages[s].weeks)
+    leaderboard = computeStageLeaderboard(weeklyData, allWeeks, players)
+  }
+
+  const currentStageKey = selectedWeek <= 3 ? 'STAGE_1' : selectedWeek <= 6 ? 'STAGE_2' : 'STAGE_3'
+  const currentStage = stages[currentStageKey]
 
   return (
     <div style={{ paddingBottom: 32 }}>
@@ -46,6 +59,9 @@ export default function Leaderboard() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
+          {data._source === 'api' && (
+            <div style={{ fontSize: 8, color: 'var(--green)', alignSelf: 'center', fontWeight: 700 }}>● LIVE</div>
+          )}
           <IconButton title="Share">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
           </IconButton>
@@ -131,7 +147,7 @@ export default function Leaderboard() {
 
       {activeTab === 'Stage' && (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 12px', gap: 6, flexWrap: 'wrap' }}>
-          {Object.entries(STAGES).map(([key, stage]) => (
+          {Object.entries(stages).map(([key, stage]) => (
             <button
               key={key}
               onClick={() => setSelectedStage(key)}
@@ -151,9 +167,9 @@ export default function Leaderboard() {
 
       {/* Leaderboard Table, Picks View, or TRANS View */}
       {activeTab === 'TRANS'
-        ? <PredictionsView selectedWeek={1} />
+        ? <PredictionsView selectedWeek={1} data={data} />
         : activeTab === 'Picks'
-        ? <PredictionsView selectedWeek={selectedWeek} />
+        ? <PredictionsView selectedWeek={selectedWeek} data={data} />
         : <LeaderboardTable leaderboard={leaderboard} activeTab={activeTab} />
       }
 
