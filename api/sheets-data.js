@@ -1,6 +1,6 @@
-import { readMatchResults, readScoringRules, readWeekPredictions } from '../lib/sheets.js';
+import { readMatchResults, readScoringRules, readWeekPredictions, readWeeklyRuleOverrides } from '../lib/sheets.js';
 import { computeWeeklyScores, computeCumulativePoints } from '../lib/scoring.js';
-import { PLAYERS, IPL_TEAMS, STAGES } from '../lib/constants.js';
+import { PLAYERS, IPL_TEAMS, STAGES, getStageForWeek } from '../lib/constants.js';
 
 export default async function handler(req, res) {
   // CORS
@@ -13,9 +13,10 @@ export default async function handler(req, res) {
 
   try {
     // Read all data from Google Sheets
-    const [matchResults, rules] = await Promise.all([
+    const [matchResults, rules, weeklyOverrides] = await Promise.all([
       readMatchResults(),
       readScoringRules(),
+      readWeeklyRuleOverrides(),
     ]);
 
     // Determine which weeks have data
@@ -50,8 +51,26 @@ export default async function handler(req, res) {
         predictionsByWeek[w] || {},
         matchResults,
         rules,
-        w
+        w,
+        weeklyOverrides
       );
+    }
+
+    // Compute per-week rules (for UI display) and weekComplete flags
+    const weeklyRules = {};
+    const weekComplete = {};
+    for (const w of weeksWithMatches) {
+      const stageKey = getStageForWeek(w);
+      const stageNum = stageKey.replace('STAGE_', '');
+      const weekOverride = weeklyOverrides[w] || {};
+      weeklyRules[w] = {
+        correct: weekOverride.correct_pick?.points ?? rules.correct_pick?.[`stage${stageNum}`] ?? rules.correct_pick?.points ?? 10,
+        wrong: weekOverride.wrong_pick?.points ?? rules.wrong_pick?.[`stage${stageNum}`] ?? rules.wrong_pick?.points ?? 0,
+        noResult: weekOverride.no_result?.points ?? rules.no_result?.[`stage${stageNum}`] ?? rules.no_result?.points ?? 5,
+        note: weekOverride.correct_pick?.note || weekOverride.no_result?.note || '',
+      };
+      const weekMatches = matchResults.filter((m) => m.week === w);
+      weekComplete[w] = weekMatches.length > 0 && weekMatches.every((m) => m.winner);
     }
 
     // Compute cumulative points for race chart
@@ -68,6 +87,8 @@ export default async function handler(req, res) {
       allPredictions: predictionsByWeek,
       cumulativePoints,
       currentWeek,
+      weeklyRules,
+      weekComplete,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err) {

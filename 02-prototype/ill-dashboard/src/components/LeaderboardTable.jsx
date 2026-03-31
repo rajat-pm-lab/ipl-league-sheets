@@ -12,9 +12,9 @@ const LAPPA_LABELS = {
 
 const gridCols = '28px 28px 1fr 26px 26px 22px 22px 22px 44px'
 
-export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly' }) {
+export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', weekComplete = false }) {
   const navigate = useNavigate()
-  const maxPts = Math.max(...leaderboard.map((r) => r.points))
+  const maxPts = Math.max(...leaderboard.map((r) => r.points), 1)
 
   return (
     <div style={{ padding: '0 8px' }}>
@@ -98,21 +98,21 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly' }) 
               <div style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {row.player.name}
               </div>
-              {isFirst && (
+              {weekComplete && isFirst && (
                 <span style={{
                   fontSize: 8, fontWeight: 700, color: 'var(--gold)',
                   background: 'rgba(255,215,0,0.15)', padding: '1px 5px',
                   borderRadius: 3, display: 'inline-block', marginTop: 1,
                 }}>₹700 Winner</span>
               )}
-              {isSecond && (
+              {weekComplete && isSecond && (
                 <span style={{
                   fontSize: 8, fontWeight: 700, color: 'var(--green)',
                   background: 'rgba(0,200,83,0.15)', padding: '1px 5px',
                   borderRadius: 3, display: 'inline-block', marginTop: 1,
                 }}>₹300 Runner-up</span>
               )}
-              {isLast && (
+              {weekComplete && isLast && (
                 <span style={{
                   fontSize: 8, fontWeight: 700, color: 'var(--red)',
                   background: 'rgba(255,23,68,0.15)', padding: '1px 5px',

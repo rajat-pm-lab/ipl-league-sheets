@@ -12,6 +12,13 @@ export default function Leaderboard() {
   const [selectedWeek, setSelectedWeek] = useState(1)
   const [selectedStage, setSelectedStage] = useState('STAGE_1')
 
+  // Compute whether the selected week is fully complete (all matches have results)
+  const weekMatches = data?.matchSchedule?.[selectedWeek] || []
+  const weekComplete = weekMatches.length > 0 && weekMatches.every((m) => m.winner !== undefined)
+
+  // Rules for selected week — from API or a sensible default
+  const weekRules = data?.weeklyRules?.[selectedWeek] || { correct: 10, wrong: 0, noResult: 5, note: '' }
+
   if (loading || !data) {
     return (
       <div style={{ padding: '60px 16px', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -127,20 +134,35 @@ export default function Leaderboard() {
 
       {/* Selectors */}
       {(activeTab === 'Weekly' || activeTab === 'Picks') && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 12px' }}>
-          <select
-            value={selectedWeek}
-            onChange={(e) => setSelectedWeek(Number(e.target.value))}
-            style={{
-              background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)',
-              color: 'var(--text)', padding: '8px 32px 8px 14px', borderRadius: 10,
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            }}
-          >
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((w) => (
-              <option key={w} value={w}>Week {w}</option>
-            ))}
-          </select>
+        <div style={{ padding: '12px 12px 4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <select
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(Number(e.target.value))}
+              style={{
+                background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)',
+                color: 'var(--text)', padding: '8px 32px 8px 14px', borderRadius: 10,
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((w) => (
+                <option key={w} value={w}>Week {w}</option>
+              ))}
+            </select>
+          </div>
+          {/* Weekly rules strip */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 8, flexWrap: 'wrap',
+          }}>
+            <span style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>Points:</span>
+            <RuleChip color="var(--green)" label={`✓ Correct +${weekRules.correct}`} />
+            <RuleChip color="var(--red)" label={`✗ Wrong ${weekRules.wrong}`} />
+            <RuleChip color="var(--grey)" label={`≈ No Result +${weekRules.noResult}`} />
+            {weekRules.note && (
+              <span style={{ fontSize: 9, color: 'var(--gold)', fontWeight: 600, fontStyle: 'italic' }}>{weekRules.note}</span>
+            )}
+          </div>
         </div>
       )}
 
@@ -166,7 +188,11 @@ export default function Leaderboard() {
 
       {activeTab === 'Picks'
         ? <PredictionsView selectedWeek={selectedWeek} data={data} />
-        : <LeaderboardTable leaderboard={leaderboard} activeTab={activeTab} />
+        : <LeaderboardTable
+            leaderboard={leaderboard}
+            activeTab={activeTab}
+            weekComplete={activeTab !== 'Weekly' || weekComplete}
+          />
       }
 
       <style>{`
@@ -176,6 +202,16 @@ export default function Leaderboard() {
         }
       `}</style>
     </div>
+  )
+}
+
+function RuleChip({ color, label }) {
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 700, color,
+      background: `${color}18`, border: `1px solid ${color}40`,
+      padding: '2px 7px', borderRadius: 6,
+    }}>{label}</span>
   )
 }
 

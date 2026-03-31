@@ -10,20 +10,22 @@ function rankAndSort(entries, players) {
   const sorted = entries
     .map((d) => ({ ...d, player: lookup[d.playerId] }))
     .sort((a, b) => b.points - a.points || b.wins - a.wins)
-  return sorted.map((d, i) => ({
-    ...d,
-    rank: i === 0 ? 1 : (d.points === sorted[i - 1].points ? sorted[i - 1].rank : i + 1),
-  }))
+  // Use a running rank variable — sorted[i-1].rank would be unset (pre-map array)
+  let currentRank = 1
+  return sorted.map((d, i) => {
+    if (i > 0 && d.points !== sorted[i - 1].points) currentRank = i + 1
+    return { ...d, rank: currentRank }
+  })
 }
 
 function computeWeeklyLeaderboard(weeklyData, weekNum, players) {
   const data = weeklyData[weekNum]
   // If no data yet for this week, show all players at zero (don't blank the screen)
   if (!data || data.length === 0) {
-    return players.map((p) => ({
+    return players.map((p, i) => ({
       playerId: p.id, player: p,
       predicted: 0, played: 0, wins: 0, losses: 0, draws: 0, points: 0,
-      rank: 1,
+      rank: i + 1,
     }))
   }
   return rankAndSort(data, players)
