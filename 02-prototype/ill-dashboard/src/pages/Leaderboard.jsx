@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLeagueData } from '../data/DataContext'
-import Podium from '../components/Podium'
+
 import LeaderboardTable from '../components/LeaderboardTable'
 import PredictionsView from '../components/PredictionsView'
 
@@ -103,9 +103,6 @@ export default function Leaderboard() {
           ● Match Day
         </span>
       </div>
-
-      {/* Podium — hidden on Picks tab */}
-      {activeTab !== 'Picks' && <Podium leaderboard={leaderboard} />}
 
       {/* Tabs */}
       <div style={{
