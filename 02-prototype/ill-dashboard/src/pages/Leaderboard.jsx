@@ -4,8 +4,7 @@ import Podium from '../components/Podium'
 import LeaderboardTable from '../components/LeaderboardTable'
 import PredictionsView from '../components/PredictionsView'
 
-// TEMP: 'TRANS' tab — remove once backend goes live
-const TABS = ['Weekly', 'Stage', 'Overall', 'Picks', 'TRANS']
+const TABS = ['Weekly', 'Stage', 'Overall', 'Picks']
 
 export default function Leaderboard() {
   const { data, loading, computeWeeklyLeaderboard, computeStageLeaderboard } = useLeagueData()
@@ -98,8 +97,8 @@ export default function Leaderboard() {
         </span>
       </div>
 
-      {/* Podium — hidden on Picks and TRANS tabs */}
-      {activeTab !== 'Picks' && activeTab !== 'TRANS' && <Podium leaderboard={leaderboard} />}
+      {/* Podium — hidden on Picks tab */}
+      {activeTab !== 'Picks' && <Podium leaderboard={leaderboard} />}
 
       {/* Tabs */}
       <div style={{
@@ -121,7 +120,7 @@ export default function Leaderboard() {
               } : {}),
             }}
           >
-            {tab === 'TRANS' ? 'Wk 1 Picks' : tab}
+            {tab}
           </div>
         ))}
       </div>
@@ -165,10 +164,7 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {/* Leaderboard Table, Picks View, or TRANS View */}
-      {activeTab === 'TRANS'
-        ? <PredictionsView selectedWeek={1} data={data} />
-        : activeTab === 'Picks'
+      {activeTab === 'Picks'
         ? <PredictionsView selectedWeek={selectedWeek} data={data} />
         : <LeaderboardTable leaderboard={leaderboard} activeTab={activeTab} />
       }

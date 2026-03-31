@@ -15,7 +15,14 @@ function rankAndSort(entries, players) {
 
 function computeWeeklyLeaderboard(weeklyData, weekNum, players) {
   const data = weeklyData[weekNum]
-  if (!data) return []
+  // If no data yet for this week, show all players at zero (don't blank the screen)
+  if (!data || data.length === 0) {
+    return players.map((p, i) => ({
+      playerId: p.id, player: p,
+      predicted: 0, played: 0, wins: 0, losses: 0, draws: 0, points: 0,
+      rank: i + 1,
+    }))
+  }
   return rankAndSort(data, players)
 }
 
