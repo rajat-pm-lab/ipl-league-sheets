@@ -39,7 +39,7 @@ export default async function handler(req, res) {
         home: m.home,
         away: m.away,
         date: m.date,
-        ...(m.winner && m.status !== 'upcoming' ? { winner: m.winner === 'NR' ? null : m.winner } : {}),
+        ...(m.winner ? { winner: m.winner === 'NR' ? null : m.winner } : {}),
       });
     }
 
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     const cumulativePoints = computeCumulativePoints(weeklyData);
 
     // Response
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
     return res.status(200).json({
       players: PLAYERS,
       iplTeams: IPL_TEAMS,
