@@ -14,47 +14,57 @@ export default function Podium({ leaderboard }) {
 
   if (podiumRanks.length < 1) return null
 
-  const slots = podiumRanks.map((rank) => ({ rank, players: byRank[rank] }))
-  // Always display in order: 2nd (left), 1st (center), 3rd (right)
-  const slot1 = slots.find((s) => s.rank === 1)
-  const slot2 = slots.find((s) => s.rank === 2) || slots[1]
-  const slot3 = slots.find((s) => s.rank === 3) || slots[2]
+  // Use positional slots — top 3 distinct rank groups by index (not by rank number)
+  // This avoids the bug where slot2 and slot3 point to the same group when rank 2 doesn't exist
+  const slot0 = podiumRanks[0] != null ? { rank: podiumRanks[0], players: byRank[podiumRanks[0]] } : null
+  const slot1 = podiumRanks[1] != null ? { rank: podiumRanks[1], players: byRank[podiumRanks[1]] } : null
+  const slot2 = podiumRanks[2] != null ? { rank: podiumRanks[2], players: byRank[podiumRanks[2]] } : null
 
-  const COLORS = { 1: '#FFD700', 2: '#C0C0C0', 3: '#CD7F32' }
-  const BAR_HEIGHTS = { 1: 64, 2: 46, 3: 36 }
+  // Visual config by podium position (not by actual rank number)
+  const POS_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32']
+  const POS_BAR_HEIGHTS = [64, 46, 36]
+  const POS_AVATAR_SIZES = [52, 40, 40]
 
-  const PodiumSlot = ({ slot }) => {
+  const PodiumSlot = ({ slot, posIndex }) => {
     if (!slot) return <div style={{ flex: '1 1 0', maxWidth: 110 }} />
     const { rank, players } = slot
-    const color = COLORS[rank] || '#888'
-    const barHeight = BAR_HEIGHTS[rank] || 36
-    const isFirst = rank === 1
-    const avatarSize = isFirst ? 52 : 40
+    const color = POS_COLORS[posIndex]
+    const barHeight = POS_BAR_HEIGHTS[posIndex]
+    const avatarSize = POS_AVATAR_SIZES[posIndex]
+    const isCenter = posIndex === 0
     const isTied = players.length > 1
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '1 1 0', maxWidth: 110 }}>
-        {isFirst && <div style={{ fontSize: 18, marginBottom: 3 }}>👑</div>}
+        {isCenter && <div style={{ fontSize: 18, marginBottom: 3 }}>👑</div>}
 
-        {/* Avatar(s) — stacked if tied */}
-        <div style={{ position: 'relative', height: avatarSize, width: isTied ? avatarSize + 16 : avatarSize }}>
-          {players.slice(0, 2).map((entry, i) => (
+        {/* Avatar(s) — side by side if tied (not overlapping) */}
+        <div style={{ display: 'flex', gap: isTied ? 3 : 0, justifyContent: 'center' }}>
+          {players.slice(0, 2).map((entry) => (
             <div key={entry.playerId} style={{
-              position: 'absolute',
-              left: isTied ? i * 14 : 0,
-              border: `${isFirst ? 3 : 2}px solid ${color}`,
+              border: `${isCenter ? 3 : 2}px solid ${color}`,
               borderRadius: '50%',
-              boxShadow: `0 0 ${isFirst ? 16 : 10}px ${color}50`,
+              boxShadow: `0 0 ${isCenter ? 16 : 10}px ${color}50`,
               background: 'var(--bg)',
+              flexShrink: 0,
             }}>
-              <Avatar player={entry.player} size={avatarSize} />
+              <Avatar player={entry.player} size={isTied ? Math.round(avatarSize * 0.72) : avatarSize} />
             </div>
           ))}
+          {players.length > 2 && (
+            <div style={{
+              width: avatarSize * 0.72, height: avatarSize * 0.72, borderRadius: '50%',
+              background: `${color}30`, border: `2px solid ${color}60`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 9, fontWeight: 800, color, flexShrink: 0,
+            }}>+{players.length - 2}</div>
+          )}
         </div>
 
         {/* Name(s) */}
-        <div style={{ fontSize: isTied ? 9 : 11, fontWeight: 700, marginTop: 5, textAlign: 'center', maxWidth: '100%' }}>
-          {players.map((e) => e.player.name).join(' = ')}
+        <div style={{ fontSize: isTied ? 9 : 11, fontWeight: 700, marginTop: 5, textAlign: 'center', maxWidth: '100%', lineHeight: 1.3 }}>
+          {players.slice(0, 2).map((e) => e.player.name).join(' = ')}
+          {players.length > 2 && ` +${players.length - 2}`}
         </div>
 
         {/* Points */}
@@ -93,9 +103,9 @@ export default function Podium({ leaderboard }) {
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 6,
         height: 185, position: 'relative',
       }}>
-        <PodiumSlot slot={slot2} />
-        <PodiumSlot slot={slot1} />
-        <PodiumSlot slot={slot3} />
+        <PodiumSlot slot={slot1} posIndex={1} />
+        <PodiumSlot slot={slot0} posIndex={0} />
+        <PodiumSlot slot={slot2} posIndex={2} />
       </div>
     </div>
   )
