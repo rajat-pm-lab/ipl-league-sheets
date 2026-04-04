@@ -115,6 +115,9 @@ function MatchCard({ match, weekPredictions, players }) {
   const homeTeam = IPL_TEAMS.find((t) => t.abbr === match.home)
   const awayTeam = IPL_TEAMS.find((t) => t.abbr === match.away)
 
+  // Count how many players have this as their Double Dip match
+  const doubleDipCount = players.filter((p) => (weekPredictions[p.id] || {})._doubleDip === match.matchNum).length
+
   let correctCount = 0
   let totalPicks = 0
   players.forEach((p) => {
@@ -161,7 +164,16 @@ function MatchCard({ match, weekPredictions, players }) {
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          {doubleDipCount > 0 && (
+            <div style={{
+              fontSize: 9, fontWeight: 800, color: '#FF9800',
+              background: 'rgba(255,152,0,0.15)', padding: '2px 6px', borderRadius: 5,
+              letterSpacing: 0.3,
+            }}>
+              🎯×{doubleDipCount}
+            </div>
+          )}
           {!isPending && !isNoResult && (
             <div style={{
               fontSize: 10, fontWeight: 800, color: 'var(--green)',
@@ -183,21 +195,41 @@ function MatchCard({ match, weekPredictions, players }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '10px 10px 14px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
             {players.map((p) => {
-              const pick = (weekPredictions[p.id] || {})[match.matchNum]
+              const playerPicks = weekPredictions[p.id] || {}
+              const pick = playerPicks[match.matchNum]
               const pickedTeam = IPL_TEAMS.find((t) => t.abbr === pick)
+              const isDD = playerPicks._doubleDip === match.matchNum
+              const hateTeam = playerPicks._hateTeam
+              const hateTeamPlaying = hateTeam && (match.home === hateTeam || match.away === hateTeam)
+              const isHate = hateTeamPlaying && !isDD
 
               let status = 'pending'
               let bg = 'rgba(255,255,255,0.03)'
               let borderColor = 'rgba(255,255,255,0.04)'
               let statusIcon = ''
 
-              if (pick && !isPending) {
+              if (!isPending) {
                 if (isNoResult) {
                   status = 'nr'; bg = 'rgba(41,121,255,0.08)'; borderColor = 'rgba(41,121,255,0.15)'; statusIcon = '◎'
-                } else if (pick === match.winner) {
-                  status = 'correct'; bg = 'rgba(0,200,83,0.08)'; borderColor = 'rgba(0,200,83,0.2)'; statusIcon = '✓'
-                } else {
-                  status = 'wrong'; bg = 'rgba(255,23,68,0.06)'; borderColor = 'rgba(255,23,68,0.15)'; statusIcon = '✗'
+                } else if (isHate) {
+                  // Hate team match — result based on hate team outcome
+                  if (match.winner !== hateTeam) {
+                    status = 'correct'; bg = 'rgba(0,200,83,0.08)'; borderColor = 'rgba(0,200,83,0.2)'; statusIcon = '+15'
+                  } else {
+                    status = 'wrong'; bg = 'rgba(255,23,68,0.06)'; borderColor = 'rgba(255,23,68,0.15)'; statusIcon = '-5'
+                  }
+                } else if (isDD) {
+                  if (pick === match.winner) {
+                    status = 'correct'; bg = 'rgba(255,152,0,0.1)'; borderColor = 'rgba(255,152,0,0.3)'; statusIcon = '+20'
+                  } else if (pick) {
+                    status = 'wrong'; bg = 'rgba(255,23,68,0.06)'; borderColor = 'rgba(255,23,68,0.15)'; statusIcon = '-10'
+                  }
+                } else if (pick) {
+                  if (pick === match.winner) {
+                    status = 'correct'; bg = 'rgba(0,200,83,0.08)'; borderColor = 'rgba(0,200,83,0.2)'; statusIcon = '✓'
+                  } else {
+                    status = 'wrong'; bg = 'rgba(255,23,68,0.06)'; borderColor = 'rgba(255,23,68,0.15)'; statusIcon = '✗'
+                  }
                 }
               }
 
@@ -211,15 +243,19 @@ function MatchCard({ match, weekPredictions, players }) {
                 }}>
                   <Avatar player={p} size={22} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {p.name}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.name}
+                      </div>
+                      {isDD && <span style={{ fontSize: 8, fontWeight: 800, color: '#FF9800', background: 'rgba(255,152,0,0.2)', padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>DD</span>}
+                      {isHate && <span style={{ fontSize: 8, fontWeight: 800, color: '#E91E63', background: 'rgba(233,30,99,0.2)', padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>💀{hateTeam}</span>}
                     </div>
                     <div style={{ fontSize: 10, fontWeight: 800, color: pickedTeam?.color || 'var(--text-secondary)', marginTop: 1 }}>
-                      {pick || '—'}
+                      {pick || (isHate ? `vs ${hateTeam}` : '—')}
                     </div>
                   </div>
                   {statusIcon && (
-                    <span style={{ fontSize: 13, fontWeight: 900, color: statusColors[status], width: 20, textAlign: 'center' }}>
+                    <span style={{ fontSize: statusIcon.length > 1 ? 10 : 13, fontWeight: 900, color: statusColors[status], flexShrink: 0, textAlign: 'center' }}>
                       {statusIcon}
                     </span>
                   )}
