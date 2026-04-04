@@ -158,19 +158,21 @@ export default function Leaderboard() {
               ))}
             </select>
           </div>
-          {/* Weekly rules strip */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: 8, flexWrap: 'wrap',
-          }}>
-            <span style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>Points:</span>
-            <RuleChip color="var(--green)" label={`✓ Correct +${weekRules.correct}`} />
-            <RuleChip color="var(--red)" label={`✗ Wrong ${weekRules.wrong}`} />
-            <RuleChip color="var(--grey)" label={`≈ No Result +${weekRules.noResult}`} />
-            {weekRules.note && (
-              <span style={{ fontSize: 9, color: 'var(--gold)', fontWeight: 600, fontStyle: 'italic' }}>{weekRules.note}</span>
-            )}
-          </div>
+          {/* Weekly rules strip — only on Weekly tab; Picks tab has its own */}
+          {activeTab === 'Weekly' && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 8, flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>Points:</span>
+              <RuleChip color="var(--green)" label={`✓ Correct +${weekRules.correct}`} />
+              <RuleChip color="var(--red)" label={`✗ Wrong ${weekRules.wrong}`} />
+              <RuleChip color="var(--grey)" label={`≈ No Result +${weekRules.noResult}`} />
+              {weekRules.note && (
+                <span style={{ fontSize: 9, color: 'var(--gold)', fontWeight: 600, fontStyle: 'italic' }}>{weekRules.note}</span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
