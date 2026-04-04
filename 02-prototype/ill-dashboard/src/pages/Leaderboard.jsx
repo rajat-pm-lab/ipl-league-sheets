@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLeagueData } from '../data/DataContext'
 
 import LeaderboardTable from '../components/LeaderboardTable'
@@ -11,6 +11,17 @@ export default function Leaderboard() {
   const [activeTab, setActiveTab] = useState('Weekly')
   const [selectedWeek, setSelectedWeek] = useState(1)
   const [selectedStage, setSelectedStage] = useState('STAGE_1')
+  const [weekInitialized, setWeekInitialized] = useState(false)
+
+  // Default to the currently active week once data loads
+  useEffect(() => {
+    if (data && !weekInitialized) {
+      const cw = data.currentWeek || 1
+      setSelectedWeek(cw)
+      setSelectedStage(cw <= 3 ? 'STAGE_1' : cw <= 6 ? 'STAGE_2' : 'STAGE_3')
+      setWeekInitialized(true)
+    }
+  }, [data, weekInitialized])
 
   // Compute whether the selected week is fully complete (all matches have results)
   const weekMatches = data?.matchSchedule?.[selectedWeek] || []

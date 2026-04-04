@@ -21,13 +21,17 @@ export default async function handler(req, res) {
 
     // Determine which weeks have data
     const weeksWithMatches = [...new Set(matchResults.map((m) => m.week))].sort((a, b) => a - b);
-    const currentWeek = weeksWithMatches.length > 0 ? Math.max(...weeksWithMatches) : 1;
+    // Current week = first week that still has incomplete/upcoming matches; fallback to last week
+    const incompleteWeek = weeksWithMatches.find((w) =>
+      matchResults.filter((m) => m.week === w).some((m) => !m.winner)
+    );
+    const currentWeek = incompleteWeek ?? (weeksWithMatches.length > 0 ? Math.max(...weeksWithMatches) : 1);
 
-    // Read predictions for each week (in parallel)
+    // Read predictions for each week (in parallel), passing matchResults for DD resolution
     const predictionsByWeek = {};
     await Promise.all(
       weeksWithMatches.map(async (w) => {
-        predictionsByWeek[w] = await readWeekPredictions(w);
+        predictionsByWeek[w] = await readWeekPredictions(w, matchResults);
       })
     );
 
