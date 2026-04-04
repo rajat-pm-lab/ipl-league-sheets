@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { AVATAR_COLORS } from '../data/sampleData'
 
 export default function Avatar({ player, size = 32 }) {
   const colorIndex = (player.id - 1) % AVATAR_COLORS.length
   const bg = AVATAR_COLORS[colorIndex]
+  const [imgError, setImgError] = useState(false)
 
-  if (player.avatar) {
+  if (player.avatar && !imgError) {
     return (
       <img
         src={player.avatar}
         alt={player.name}
+        onError={() => setImgError(true)}
         style={{
           width: size,
           height: size,
