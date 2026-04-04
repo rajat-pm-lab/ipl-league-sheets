@@ -6,6 +6,12 @@ export default function PredictionsView({ selectedWeek, data }) {
   const players = data?.players || []
   const matches = (data?.matchSchedule || {})[selectedWeek] || []
   const weekPredictions = (data?.allPredictions || {})[selectedWeek] || {}
+  const weekRules = (data?.weeklyRules || {})[selectedWeek] || {}
+
+  // Detect if this week has DD or HT mechanics
+  const allPicks = Object.values(weekPredictions)
+  const hasDD = allPicks.some((p) => p._doubleDip)
+  const hasHT = allPicks.some((p) => p._hateTeam)
 
   if (matches.length === 0) {
     return (
@@ -31,12 +37,27 @@ export default function PredictionsView({ selectedWeek, data }) {
 
   return (
     <div style={{ padding: '4px 12px 0' }}>
-      {/* Subtitle */}
+      {/* Week rules strip */}
       <div style={{
-        fontSize: 10, color: 'var(--text-secondary)', fontWeight: 600,
-        padding: '8px 2px 12px', letterSpacing: 0.3,
+        display: 'flex', flexWrap: 'wrap', gap: 6,
+        padding: '8px 2px 12px',
       }}>
-        Tap any match to see all players' picks
+        <RuleChip label={`✓ Correct +${weekRules.correct ?? 10}`} color="var(--green)" />
+        {(hasDD || hasHT) && (
+          <RuleChip label={`✗ Wrong 0`} color="var(--text-secondary)" />
+        )}
+        {hasDD && (
+          <>
+            <RuleChip label="🎯 DD Correct +20" color="#FF9800" />
+            <RuleChip label="🎯 DD Wrong -10" color="var(--red)" />
+          </>
+        )}
+        {hasHT && (
+          <>
+            <RuleChip label="💀 HT Loses +15" color="var(--green)" />
+            <RuleChip label="💀 HT Wins -5" color="var(--red)" />
+          </>
+        )}
       </div>
 
       {/* Match cards */}
@@ -282,6 +303,20 @@ function LegendDot({ color, label }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
       <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
       <span>{label}</span>
+    </div>
+  )
+}
+
+function RuleChip({ label, color }) {
+  return (
+    <div style={{
+      fontSize: 10, fontWeight: 700, color,
+      background: 'rgba(255,255,255,0.05)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: 6, padding: '3px 8px',
+      letterSpacing: 0.2,
+    }}>
+      {label}
     </div>
   )
 }
