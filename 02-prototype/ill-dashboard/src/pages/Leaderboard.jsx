@@ -28,7 +28,7 @@ export default function Leaderboard() {
   const weekComplete = weekMatches.length > 0 && weekMatches.every((m) => m.winner !== undefined)
 
   // Rules for selected week — from API or a sensible default
-  const weekRules = data?.weeklyRules?.[selectedWeek] || { correct: 10, wrong: 0, noResult: 5, note: '' }
+  const weekRules = data?.weeklyRules?.[selectedWeek] || { correct: 10, wrong: 0, noResult: 0, note: '' }
 
   if (loading || !data) {
     return (

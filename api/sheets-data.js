@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       weeklyRules[w] = {
         correct: weekOverride.correct_pick?.points ?? rules.correct_pick?.[`stage${stageNum}`] ?? rules.correct_pick?.points ?? 10,
         wrong: weekOverride.wrong_pick?.points ?? rules.wrong_pick?.[`stage${stageNum}`] ?? rules.wrong_pick?.points ?? 0,
-        noResult: weekOverride.no_result?.points ?? rules.no_result?.[`stage${stageNum}`] ?? rules.no_result?.points ?? 5,
+        noResult: weekOverride.no_result?.points ?? rules.no_result?.[`stage${stageNum}`] ?? rules.no_result?.points ?? 0,
         note: weekOverride.correct_pick?.note || weekOverride.no_result?.note || '',
       };
       const weekMatches = matchResults.filter((m) => m.week === w);
