@@ -175,7 +175,7 @@ function MatchCard({ match, weekPredictions, players }) {
           </div>
           {!isPending && (
             <div style={{ fontSize: 10, fontWeight: 700, marginTop: 3, color: isNoResult ? 'var(--blue)' : 'var(--green)' }}>
-              {isNoResult ? 'No Result — 5pts all' : `Winner: ${match.winner}`}
+              {isNoResult ? 'No Result — 0pts all' : `Winner: ${match.winner}`}
             </div>
           )}
           {isPending && match.date && (
