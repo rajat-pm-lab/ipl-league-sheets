@@ -230,33 +230,40 @@ function MatchCard({ match, weekPredictions, players }) {
             let pts = null
             let ptsColor = 'var(--text-secondary)'
 
-            if (!isPending) {
-              if (isNoResult) {
-                chip = <StatusChip label="◎ NR" chipBg="rgba(41,121,255,0.15)" chipColor="var(--blue)" chipBorder="rgba(41,121,255,0.3)" />
-                bg = 'rgba(41,121,255,0.05)'; borderColor = 'rgba(41,121,255,0.12)'
-                pts = '0'; ptsColor = 'var(--text-secondary)'
+            if (isPending) {
+              // Upcoming match — show DD/HT indicators, no outcome colouring
+              if (isDD) {
+                chip = <StatusChip label="🎯 DD" chipBg="rgba(255,152,0,0.15)" chipColor="#FF9800" chipBorder="rgba(255,152,0,0.3)" />
+                borderColor = 'rgba(255,152,0,0.12)'
               } else if (isHate) {
-                const htWon = match.winner === hateTeam
-                chip = <StatusChip label={`💀 ${hateTeam}`} chipBg="rgba(233,30,99,0.18)" chipColor="#FF4081" chipBorder="rgba(233,30,99,0.35)" />
-                bg = htWon ? 'rgba(255,23,68,0.04)' : 'rgba(0,200,83,0.05)'
-                borderColor = htWon ? 'rgba(255,23,68,0.12)' : 'rgba(0,200,83,0.15)'
-                pts = htWon ? '-5' : '+15'; ptsColor = htWon ? 'var(--red)' : 'var(--green)'
-              } else if (isDD) {
-                const ddCorrect = pick === match.winner
-                chip = <StatusChip label="🎯 DD" chipBg="rgba(255,152,0,0.18)" chipColor="#FF9800" chipBorder="rgba(255,152,0,0.35)" />
-                bg = ddCorrect ? 'rgba(255,152,0,0.07)' : 'rgba(255,23,68,0.04)'
-                borderColor = ddCorrect ? 'rgba(255,152,0,0.25)' : 'rgba(255,23,68,0.12)'
-                pts = ddCorrect ? '+20' : (pick ? '-10' : null)
-                ptsColor = ddCorrect ? '#FF9800' : 'var(--red)'
-              } else if (pick) {
-                const correct = pick === match.winner
-                chip = correct
-                  ? <StatusChip label="✓" chipBg="rgba(0,200,83,0.18)" chipColor="var(--green)" chipBorder="rgba(0,200,83,0.3)" />
-                  : <StatusChip label="✗" chipBg="rgba(255,23,68,0.15)" chipColor="var(--red)" chipBorder="rgba(255,23,68,0.28)" />
-                bg = correct ? 'rgba(0,200,83,0.05)' : 'rgba(255,23,68,0.03)'
-                borderColor = correct ? 'rgba(0,200,83,0.15)' : 'rgba(255,23,68,0.1)'
-                pts = correct ? '+10' : '0'; ptsColor = correct ? 'var(--green)' : 'rgba(255,255,255,0.3)'
+                chip = <StatusChip label={`💀 ${hateTeam}`} chipBg="rgba(233,30,99,0.12)" chipColor="#FF4081" chipBorder="rgba(233,30,99,0.25)" />
+                borderColor = 'rgba(233,30,99,0.1)'
               }
+            } else if (isNoResult) {
+              chip = <StatusChip label="◎ NR" chipBg="rgba(41,121,255,0.15)" chipColor="var(--blue)" chipBorder="rgba(41,121,255,0.3)" />
+              bg = 'rgba(41,121,255,0.05)'; borderColor = 'rgba(41,121,255,0.12)'
+              pts = '0'; ptsColor = 'var(--text-secondary)'
+            } else if (isHate) {
+              const htWon = match.winner === hateTeam
+              chip = <StatusChip label={`💀 ${hateTeam}`} chipBg="rgba(233,30,99,0.18)" chipColor="#FF4081" chipBorder="rgba(233,30,99,0.35)" />
+              bg = htWon ? 'rgba(255,23,68,0.04)' : 'rgba(0,200,83,0.05)'
+              borderColor = htWon ? 'rgba(255,23,68,0.12)' : 'rgba(0,200,83,0.15)'
+              pts = htWon ? '-5' : '+15'; ptsColor = htWon ? 'var(--red)' : 'var(--green)'
+            } else if (isDD) {
+              const ddCorrect = pick === match.winner
+              chip = <StatusChip label="🎯 DD" chipBg="rgba(255,152,0,0.18)" chipColor="#FF9800" chipBorder="rgba(255,152,0,0.35)" />
+              bg = ddCorrect ? 'rgba(255,152,0,0.07)' : 'rgba(255,23,68,0.04)'
+              borderColor = ddCorrect ? 'rgba(255,152,0,0.25)' : 'rgba(255,23,68,0.12)'
+              pts = ddCorrect ? '+20' : (pick ? '-10' : null)
+              ptsColor = ddCorrect ? '#FF9800' : 'var(--red)'
+            } else if (pick) {
+              const correct = pick === match.winner
+              chip = correct
+                ? <StatusChip label="✓" chipBg="rgba(0,200,83,0.18)" chipColor="var(--green)" chipBorder="rgba(0,200,83,0.3)" />
+                : <StatusChip label="✗" chipBg="rgba(255,23,68,0.15)" chipColor="var(--red)" chipBorder="rgba(255,23,68,0.28)" />
+              bg = correct ? 'rgba(0,200,83,0.05)' : 'rgba(255,23,68,0.03)'
+              borderColor = correct ? 'rgba(0,200,83,0.15)' : 'rgba(255,23,68,0.1)'
+              pts = correct ? '+10' : '0'; ptsColor = correct ? 'var(--green)' : 'rgba(255,255,255,0.3)'
             }
 
             return (
