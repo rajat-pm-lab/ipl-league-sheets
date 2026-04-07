@@ -5,7 +5,7 @@ import LeaderboardTable from '../components/LeaderboardTable'
 import PredictionsView from '../components/PredictionsView'
 import Certificates from './Certificates'
 
-const TABS = ['Weekly', 'Stage', 'Overall', 'Picks', 'Certs']
+const TABS = ['Weekly', 'Stage', 'Overall', 'Picks', 'Awards']
 
 export default function Leaderboard() {
   const { data, loading, computeWeeklyLeaderboard, computeStageLeaderboard } = useLeagueData()
@@ -197,7 +197,7 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {activeTab === 'Certs'
+      {activeTab === 'Awards'
         ? <Certificates />
         : activeTab === 'Picks'
           ? <PredictionsView selectedWeek={selectedWeek} data={data} />

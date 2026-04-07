@@ -1,6 +1,7 @@
 {
   "name": "ipl-league-sheets",
   "private": true,
+  "type": "module",
   "dependencies": {
     "googleapis": "^144.0.0"
   }

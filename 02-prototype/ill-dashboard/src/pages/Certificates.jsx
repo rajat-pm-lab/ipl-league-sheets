@@ -1,18 +1,7 @@
-import { useState } from 'react'
-
-// Static manifest — add new entries here as weeks complete
-// { week: N, winner: { name, file }, runnerUp: { name, file } }
-const CERT_MANIFEST = [
-  {
-    week: 1,
-    winner:   { name: 'Shan Mohammed',    file: '/certificates/week-1-winner.jpg' },
-    runnerUp: { name: 'Deepanshu Pincha', file: '/certificates/week-1-runner-up.jpg' },
-  },
-]
+import { useState, useEffect } from 'react'
 
 async function shareOrDownload(file, label) {
   const url = window.location.origin + file
-  // Try Web Share API first (works on mobile — opens native share sheet including Instagram)
   if (navigator.share) {
     try {
       const res = await fetch(url)
@@ -24,7 +13,6 @@ async function shareOrDownload(file, label) {
       // Fall through to download
     }
   }
-  // Fallback: trigger download
   const a = document.createElement('a')
   a.href = url
   a.download = label + '.jpg'
@@ -32,16 +20,35 @@ async function shareOrDownload(file, label) {
 }
 
 export default function Certificates() {
-  const weeks = CERT_MANIFEST.map((c) => c.week)
-  const [selectedWeek, setSelectedWeek] = useState(weeks[weeks.length - 1])
-  const cert = CERT_MANIFEST.find((c) => c.week === selectedWeek)
+  const [manifest, setManifest] = useState(null)
+  const [selectedWeek, setSelectedWeek] = useState(null)
+
+  useEffect(() => {
+    fetch('/certificates/manifest.json')
+      .then((r) => r.json())
+      .then((data) => {
+        setManifest(data)
+        if (data.length > 0) setSelectedWeek(data[data.length - 1].week)
+      })
+      .catch(() => setManifest([]))
+  }, [])
+
+  if (manifest === null) {
+    return <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Loading…</div>
+  }
+
+  if (manifest.length === 0) {
+    return <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>No certificates yet</div>
+  }
+
+  const cert = manifest.find((c) => c.week === selectedWeek)
 
   return (
     <div style={{ padding: '4px 12px 24px' }}>
       {/* Week selector */}
       <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 16px' }}>
         <select
-          value={selectedWeek}
+          value={selectedWeek ?? ''}
           onChange={(e) => setSelectedWeek(Number(e.target.value))}
           style={{
             background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)',
@@ -49,39 +56,27 @@ export default function Certificates() {
             fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}
         >
-          {weeks.map((w) => (
-            <option key={w} value={w}>Week {w}</option>
+          {manifest.map((c) => (
+            <option key={c.week} value={c.week}>Week {c.week}</option>
           ))}
         </select>
       </div>
 
-      {cert ? (
+      {cert && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <CertCard
-            title="WINNER"
-            accentColor="#C9A84C"
-            cert={cert.winner}
-            week={cert.week}
-            type="winner"
-          />
-          <CertCard
-            title="RUNNER-UP"
-            accentColor="#9E9E9E"
-            cert={cert.runnerUp}
-            week={cert.week}
-            type="runner-up"
-          />
-        </div>
-      ) : (
-        <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>
-          No certificates yet for Week {selectedWeek}
+          {cert.winner && (
+            <CertCard title="WINNER" accentColor="#C9A84C" cert={cert.winner} week={cert.week} />
+          )}
+          {cert.runnerUp && (
+            <CertCard title="RUNNER-UP" accentColor="#9E9E9E" cert={cert.runnerUp} week={cert.week} />
+          )}
         </div>
       )}
     </div>
   )
 }
 
-function CertCard({ title, accentColor, cert, week, type }) {
+function CertCard({ title, accentColor, cert, week }) {
   const [sharing, setSharing] = useState(false)
   const label = `ILL Week ${week} ${title}`
 
@@ -98,7 +93,6 @@ function CertCard({ title, accentColor, cert, week, type }) {
       borderRadius: 16,
       overflow: 'hidden',
     }}>
-      {/* Header */}
       <div style={{
         padding: '10px 14px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -108,15 +102,10 @@ function CertCard({ title, accentColor, cert, week, type }) {
           <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, color: accentColor, textTransform: 'uppercase' }}>
             Week {week}
           </div>
-          <div style={{ fontSize: 14, fontWeight: 900, color: accentColor }}>
-            {title}
-          </div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginTop: 1 }}>
-            {cert.name}
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 900, color: accentColor }}>{title}</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginTop: 1 }}>{cert.name}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {/* Download */}
           <a
             href={cert.file}
             download={`${label}.jpg`}
@@ -131,7 +120,6 @@ function CertCard({ title, accentColor, cert, week, type }) {
           >
             ↓ Save
           </a>
-          {/* Share */}
           <button
             onClick={handleShare}
             disabled={sharing}
@@ -147,13 +135,7 @@ function CertCard({ title, accentColor, cert, week, type }) {
           </button>
         </div>
       </div>
-
-      {/* Certificate image */}
-      <img
-        src={cert.file}
-        alt={label}
-        style={{ width: '100%', display: 'block' }}
-      />
+      <img src={cert.file} alt={label} style={{ width: '100%', display: 'block' }} />
     </div>
   )
 }
