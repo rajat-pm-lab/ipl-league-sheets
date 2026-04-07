@@ -213,77 +213,82 @@ function MatchCard({ match, weekPredictions, players }) {
       </div>
 
       {expanded && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '10px 10px 14px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-            {players.map((p) => {
-              const playerPicks = weekPredictions[p.id] || {}
-              const pick = playerPicks[match.matchNum]
-              const pickedTeam = IPL_TEAMS.find((t) => t.abbr === pick)
-              const isDD = playerPicks._doubleDip === match.matchNum
-              const hateTeam = playerPicks._hateTeam
-              const hateTeamPlaying = hateTeam && (match.home === hateTeam || match.away === hateTeam)
-              const isHate = hateTeamPlaying && !isDD
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '8px 8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {players.map((p) => {
+            const playerPicks = weekPredictions[p.id] || {}
+            const pick = playerPicks[match.matchNum]
+            const pickedTeam = IPL_TEAMS.find((t) => t.abbr === pick)
+            const isDD = playerPicks._doubleDip === match.matchNum
+            const hateTeam = playerPicks._hateTeam
+            const hateTeamPlaying = hateTeam && (match.home === hateTeam || match.away === hateTeam)
+            const isHate = hateTeamPlaying && !isDD
 
-              let status = 'pending'
-              let bg = 'rgba(255,255,255,0.03)'
-              let borderColor = 'rgba(255,255,255,0.04)'
-              let statusIcon = ''
+            // Determine outcome, chip style, row style, and points
+            let chip = null
+            let bg = 'rgba(255,255,255,0.02)'
+            let borderColor = 'rgba(255,255,255,0.04)'
+            let pts = null
+            let ptsColor = 'var(--text-secondary)'
 
-              if (!isPending) {
-                if (isNoResult) {
-                  status = 'nr'; bg = 'rgba(41,121,255,0.08)'; borderColor = 'rgba(41,121,255,0.15)'; statusIcon = '◎'
-                } else if (isHate) {
-                  // Hate team match — result based on hate team outcome
-                  if (match.winner !== hateTeam) {
-                    status = 'correct'; bg = 'rgba(0,200,83,0.08)'; borderColor = 'rgba(0,200,83,0.2)'; statusIcon = '+15'
-                  } else {
-                    status = 'wrong'; bg = 'rgba(255,23,68,0.06)'; borderColor = 'rgba(255,23,68,0.15)'; statusIcon = '-5'
-                  }
-                } else if (isDD) {
-                  if (pick === match.winner) {
-                    status = 'correct'; bg = 'rgba(255,152,0,0.1)'; borderColor = 'rgba(255,152,0,0.3)'; statusIcon = '+20'
-                  } else if (pick) {
-                    status = 'wrong'; bg = 'rgba(255,23,68,0.06)'; borderColor = 'rgba(255,23,68,0.15)'; statusIcon = '-10'
-                  }
-                } else if (pick) {
-                  if (pick === match.winner) {
-                    status = 'correct'; bg = 'rgba(0,200,83,0.08)'; borderColor = 'rgba(0,200,83,0.2)'; statusIcon = '✓'
-                  } else {
-                    status = 'wrong'; bg = 'rgba(255,23,68,0.06)'; borderColor = 'rgba(255,23,68,0.15)'; statusIcon = '✗'
-                  }
-                }
+            if (!isPending) {
+              if (isNoResult) {
+                chip = <StatusChip label="◎ NR" chipBg="rgba(41,121,255,0.15)" chipColor="var(--blue)" chipBorder="rgba(41,121,255,0.3)" />
+                bg = 'rgba(41,121,255,0.05)'; borderColor = 'rgba(41,121,255,0.12)'
+                pts = '0'; ptsColor = 'var(--text-secondary)'
+              } else if (isHate) {
+                const htWon = match.winner === hateTeam
+                chip = <StatusChip label={`💀 ${hateTeam}`} chipBg="rgba(233,30,99,0.18)" chipColor="#FF4081" chipBorder="rgba(233,30,99,0.35)" />
+                bg = htWon ? 'rgba(255,23,68,0.04)' : 'rgba(0,200,83,0.05)'
+                borderColor = htWon ? 'rgba(255,23,68,0.12)' : 'rgba(0,200,83,0.15)'
+                pts = htWon ? '-5' : '+15'; ptsColor = htWon ? 'var(--red)' : 'var(--green)'
+              } else if (isDD) {
+                const ddCorrect = pick === match.winner
+                chip = <StatusChip label="🎯 DD" chipBg="rgba(255,152,0,0.18)" chipColor="#FF9800" chipBorder="rgba(255,152,0,0.35)" />
+                bg = ddCorrect ? 'rgba(255,152,0,0.07)' : 'rgba(255,23,68,0.04)'
+                borderColor = ddCorrect ? 'rgba(255,152,0,0.25)' : 'rgba(255,23,68,0.12)'
+                pts = ddCorrect ? '+20' : (pick ? '-10' : null)
+                ptsColor = ddCorrect ? '#FF9800' : 'var(--red)'
+              } else if (pick) {
+                const correct = pick === match.winner
+                chip = correct
+                  ? <StatusChip label="✓" chipBg="rgba(0,200,83,0.18)" chipColor="var(--green)" chipBorder="rgba(0,200,83,0.3)" />
+                  : <StatusChip label="✗" chipBg="rgba(255,23,68,0.15)" chipColor="var(--red)" chipBorder="rgba(255,23,68,0.28)" />
+                bg = correct ? 'rgba(0,200,83,0.05)' : 'rgba(255,23,68,0.03)'
+                borderColor = correct ? 'rgba(0,200,83,0.15)' : 'rgba(255,23,68,0.1)'
+                pts = correct ? '+10' : '0'; ptsColor = correct ? 'var(--green)' : 'rgba(255,255,255,0.3)'
               }
+            }
 
-              const statusColors = { correct: 'var(--green)', wrong: 'var(--red)', nr: 'var(--blue)', pending: 'var(--text-secondary)' }
-
-              return (
-                <div key={p.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '8px 10px', borderRadius: 10,
-                  background: bg, border: `1px solid ${borderColor}`,
-                }}>
-                  <Avatar player={p} size={22} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {p.name}
-                      </div>
-                      {isDD && <span style={{ fontSize: 8, fontWeight: 800, color: '#FF9800', background: 'rgba(255,152,0,0.2)', padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>DD</span>}
-                      {isHate && <span style={{ fontSize: 8, fontWeight: 800, color: '#E91E63', background: 'rgba(233,30,99,0.2)', padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>💀{hateTeam}</span>}
-                    </div>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: pickedTeam?.color || 'var(--text-secondary)', marginTop: 1 }}>
-                      {pick || (isHate ? `vs ${hateTeam}` : '—')}
-                    </div>
-                  </div>
-                  {statusIcon && (
-                    <span style={{ fontSize: statusIcon.length > 1 ? 10 : 13, fontWeight: 900, color: statusColors[status], flexShrink: 0, textAlign: 'center' }}>
-                      {statusIcon}
-                    </span>
-                  )}
+            return (
+              <div key={p.id} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '8px 10px', borderRadius: 10,
+                background: bg, border: `1px solid ${borderColor}`,
+              }}>
+                {/* Status chip — leftmost */}
+                <div style={{ width: 52, flexShrink: 0 }}>
+                  {chip}
                 </div>
-              )
-            })}
-          </div>
+                {/* Avatar + name */}
+                <Avatar player={p} size={26} />
+                <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {p.name}
+                </div>
+                {/* Separator */}
+                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
+                {/* Pick */}
+                <div style={{ fontSize: 12, fontWeight: 900, color: pickedTeam?.color || 'var(--text-secondary)', flexShrink: 0, minWidth: 28, textAlign: 'center' }}>
+                  {pick || (isHate ? '—' : '—')}
+                </div>
+                {/* Points */}
+                {pts !== null && (
+                  <div style={{ fontSize: 13, fontWeight: 900, color: ptsColor, flexShrink: 0, minWidth: 30, textAlign: 'right' }}>
+                    {pts}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -303,6 +308,21 @@ function LegendDot({ color, label }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
       <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
       <span>{label}</span>
+    </div>
+  )
+}
+
+function StatusChip({ label, chipBg, chipColor, chipBorder }) {
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      height: 22, padding: '0 7px', borderRadius: 6,
+      background: chipBg, color: chipColor,
+      border: `1px solid ${chipBorder}`,
+      fontSize: 10, fontWeight: 800, letterSpacing: 0.2,
+      whiteSpace: 'nowrap',
+    }}>
+      {label}
     </div>
   )
 }
