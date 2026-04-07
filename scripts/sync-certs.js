@@ -13,6 +13,13 @@ const DEST_DIR = path.join(ROOT, '02-prototype/ill-dashboard/public/certificates
 
 fs.mkdirSync(DEST_DIR, { recursive: true });
 
+// If source dir doesn't exist, write empty manifest and exit cleanly
+if (!fs.existsSync(SRC_DIR)) {
+  fs.writeFileSync(path.join(DEST_DIR, 'manifest.json'), '[]');
+  console.log('sync-certs: Weekly Winners/ not found, wrote empty manifest');
+  process.exit(0);
+}
+
 const files = fs.readdirSync(SRC_DIR).filter((f) => /\.(jpg|jpeg|png)$/i.test(f));
 
 const byWeek = {};
