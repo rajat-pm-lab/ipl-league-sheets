@@ -3,8 +3,9 @@ import { useLeagueData } from '../data/DataContext'
 
 import LeaderboardTable from '../components/LeaderboardTable'
 import PredictionsView from '../components/PredictionsView'
+import Certificates from './Certificates'
 
-const TABS = ['Weekly', 'Stage', 'Overall', 'Picks']
+const TABS = ['Weekly', 'Stage', 'Overall', 'Picks', 'Certs']
 
 export default function Leaderboard() {
   const { data, loading, computeWeeklyLeaderboard, computeStageLeaderboard } = useLeagueData()
@@ -196,13 +197,15 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {activeTab === 'Picks'
-        ? <PredictionsView selectedWeek={selectedWeek} data={data} />
-        : <LeaderboardTable
-            leaderboard={leaderboard}
-            activeTab={activeTab}
-            weekComplete={activeTab !== 'Weekly' || weekComplete}
-          />
+      {activeTab === 'Certs'
+        ? <Certificates />
+        : activeTab === 'Picks'
+          ? <PredictionsView selectedWeek={selectedWeek} data={data} />
+          : <LeaderboardTable
+              leaderboard={leaderboard}
+              activeTab={activeTab}
+              weekComplete={activeTab !== 'Weekly' || weekComplete}
+            />
       }
 
       <style>{`
