@@ -8,10 +8,11 @@ export default function PredictionsView({ selectedWeek, data }) {
   const weekPredictions = (data?.allPredictions || {})[selectedWeek] || {}
   const weekRules = (data?.weeklyRules || {})[selectedWeek] || {}
 
-  // Detect if this week has DD or HT mechanics
+  // Detect which mechanics this week has
   const allPicks = Object.values(weekPredictions)
   const hasDD = allPicks.some((p) => p._doubleDip)
   const hasHT = allPicks.some((p) => p._hateTeam)
+  const hasConfidence = allPicks.some((p) => p._confidence)
 
   if (matches.length === 0) {
     return (
@@ -42,20 +43,30 @@ export default function PredictionsView({ selectedWeek, data }) {
         display: 'flex', flexWrap: 'wrap', gap: 6,
         padding: '8px 2px 12px',
       }}>
-        <RuleChip label={`✓ Correct +${weekRules.correct ?? 10}`} color="var(--green)" />
-        {(hasDD || hasHT) && (
-          <RuleChip label={`✗ Wrong 0`} color="var(--text-secondary)" />
-        )}
-        {hasDD && (
+        {hasConfidence ? (
           <>
-            <RuleChip label="🎯 DD Correct +20" color="#FF9800" />
-            <RuleChip label="🎯 DD Wrong -10" color="var(--red)" />
+            <RuleChip label="🎯 Confidence week" color="#FFD700" />
+            <RuleChip label="✓ Correct: +10+Conf" color="var(--green)" />
+            <RuleChip label="✗ Wrong: -Conf" color="var(--red)" />
           </>
-        )}
-        {hasHT && (
+        ) : (
           <>
-            <RuleChip label="💀 HT Loses +15" color="var(--green)" />
-            <RuleChip label="💀 HT Wins -5" color="var(--red)" />
+            <RuleChip label={`✓ Correct +${weekRules.correct ?? 10}`} color="var(--green)" />
+            {(hasDD || hasHT) && (
+              <RuleChip label="✗ Wrong 0" color="var(--text-secondary)" />
+            )}
+            {hasDD && (
+              <>
+                <RuleChip label="🎯 DD Correct +20" color="#FF9800" />
+                <RuleChip label="🎯 DD Wrong -10" color="var(--red)" />
+              </>
+            )}
+            {hasHT && (
+              <>
+                <RuleChip label="💀 HT Loses +15" color="var(--green)" />
+                <RuleChip label="💀 HT Wins -5" color="var(--red)" />
+              </>
+            )}
           </>
         )}
       </div>
@@ -230,9 +241,14 @@ function MatchCard({ match, weekPredictions, players }) {
             let pts = null
             let ptsColor = 'var(--text-secondary)'
 
+            const confidence = playerPicks._confidence?.[match.matchNum]
+
             if (isPending) {
-              // Upcoming match — show DD/HT indicators, no outcome colouring
-              if (isDD) {
+              // Upcoming match — show mechanic indicators, no outcome colouring
+              if (confidence !== undefined) {
+                chip = <StatusChip label={`×${confidence}`} chipBg="rgba(255,215,0,0.15)" chipColor="#FFD700" chipBorder="rgba(255,215,0,0.3)" />
+                borderColor = 'rgba(255,215,0,0.12)'
+              } else if (isDD) {
                 chip = <StatusChip label="🎯 DD" chipBg="rgba(255,152,0,0.15)" chipColor="#FF9800" chipBorder="rgba(255,152,0,0.3)" />
                 borderColor = 'rgba(255,152,0,0.12)'
               } else if (isHate) {
@@ -243,6 +259,15 @@ function MatchCard({ match, weekPredictions, players }) {
               chip = <StatusChip label="◎ NR" chipBg="rgba(41,121,255,0.15)" chipColor="var(--blue)" chipBorder="rgba(41,121,255,0.3)" />
               bg = 'rgba(41,121,255,0.05)'; borderColor = 'rgba(41,121,255,0.12)'
               pts = '0'; ptsColor = 'var(--text-secondary)'
+            } else if (confidence !== undefined) {
+              const confCorrect = pick === match.winner
+              chip = confCorrect
+                ? <StatusChip label={`✓ ×${confidence}`} chipBg="rgba(0,200,83,0.18)" chipColor="var(--green)" chipBorder="rgba(0,200,83,0.3)" />
+                : <StatusChip label={`✗ ×${confidence}`} chipBg="rgba(255,23,68,0.15)" chipColor="var(--red)" chipBorder="rgba(255,23,68,0.28)" />
+              bg = confCorrect ? 'rgba(0,200,83,0.05)' : 'rgba(255,23,68,0.03)'
+              borderColor = confCorrect ? 'rgba(0,200,83,0.15)' : 'rgba(255,23,68,0.1)'
+              pts = confCorrect ? `+${10 + confidence}` : `-${confidence}`
+              ptsColor = confCorrect ? 'var(--green)' : 'var(--red)'
             } else if (isHate) {
               const htWon = match.winner === hateTeam
               chip = <StatusChip label={`💀 ${hateTeam}`} chipBg="rgba(233,30,99,0.18)" chipColor="#FF4081" chipBorder="rgba(233,30,99,0.35)" />
