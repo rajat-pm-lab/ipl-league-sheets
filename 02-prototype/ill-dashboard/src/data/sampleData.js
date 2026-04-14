@@ -13,16 +13,16 @@ export const AVATAR_COLORS = [
 ];
 
 export const PLAYERS = [
-  { id: 1, name: 'Aditya', initials: 'AD', role: 'GRIEVANCE' },
-  { id: 2, name: 'Aman', initials: 'AM', role: 'PARTICIPANT' },
-  { id: 3, name: 'Deepanshu', initials: 'DP', role: 'PARTICIPANT' },
+  { id: 1, name: 'Aditya', initials: 'AD', role: 'GRIEVANCE', avatar: '/avatars/aditya.jpg' },
+  { id: 2, name: 'Aman', initials: 'AM', role: 'PARTICIPANT', avatar: '/avatars/aman.jpg' },
+  { id: 3, name: 'Deepanshu', initials: 'DP', role: 'PARTICIPANT', avatar: '/avatars/deepanshu.jpg' },
   { id: 4, name: 'Rajjo', initials: 'RJ', role: 'PARTICIPANT', avatar: '/avatars/rajjo.jpg' },
-  { id: 5, name: 'Shan', initials: 'SN', role: 'AUDIT' },
-  { id: 6, name: 'Shivek', initials: 'SK', role: 'PARTICIPANT' },
-  { id: 7, name: 'Shubham', initials: 'SH', role: 'AUDIT' },
+  { id: 5, name: 'Shan', initials: 'SN', role: 'AUDIT', avatar: '/avatars/shan.jpg' },
+  { id: 6, name: 'Shivek', initials: 'SK', role: 'PARTICIPANT', avatar: '/avatars/shivek.jpg' },
+  { id: 7, name: 'Shubham', initials: 'SH', role: 'AUDIT', avatar: '/avatars/shubham.jpg' },
   { id: 8, name: 'Sudarshan', initials: 'SD', role: 'PARTICIPANT' },
-  { id: 9, name: 'Suyash', initials: 'SY', role: 'PARTICIPANT' },
-  { id: 10, name: 'Tushar', initials: 'TU', role: 'PARTICIPANT' },
+  { id: 9, name: 'Suyash', initials: 'SY', role: 'PARTICIPANT', avatar: '/avatars/suyash.jpg' },
+  { id: 10, name: 'Tushar', initials: 'TU', role: 'PARTICIPANT', avatar: '/avatars/tushar.jpg' },
   { id: 12, name: 'Vikrant', initials: 'VK', role: 'ADMIN', avatar: '/avatars/vikrant.jpg' },
   { id: 13, name: 'Vipul', initials: 'VP', role: 'FINANCE', avatar: '/avatars/vipul.jpg' },
 ];
