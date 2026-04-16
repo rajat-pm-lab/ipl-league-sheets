@@ -10,7 +10,6 @@ const AVATAR_COLORS = [
   '#E040FB', '#FFAB40', '#69F0AE',
 ]
 
-const WEEKLY_PRIZE = { 1: 700, 2: 300 }
 
 export default function PlayerProfile() {
   const { id } = useParams()
@@ -70,12 +69,22 @@ export default function PlayerProfile() {
       ? ((overall.wins / (overall.wins + overall.losses)) * 100).toFixed(1)
       : '—'
 
-  // ── Points Over Time chart ──
+  // ── Points Over Time chart (only weeks up to currentWeek) ──
   const playerCumData = (cumulativePoints || []).find((p) => p.playerId === playerId)
-  const chartData = weeksWithData.map((w) => {
-    const total = (cumulativePoints || []).reduce((s, p) => s + (p.weeks[w] || 0), 0)
-    const avg = Math.round(total / Math.max((cumulativePoints || []).length, 1))
-    return { week: `W${w}`, player: playerCumData?.weeks[w] || 0, avg }
+  const chartWeeks = weeksWithData.filter((w) => w <= currentWeek)
+  const chartData = chartWeeks.map((w) => {
+    const cumTotal = (cumulativePoints || []).reduce((s, p) => s + (p.weeks[w] || 0), 0)
+    const cumAvg = Math.round(cumTotal / Math.max((cumulativePoints || []).length, 1))
+    const weekTotal = (weeklyData[w] || []).reduce((s, r) => s + r.points, 0)
+    const weekAvg = Math.round(weekTotal / Math.max((weeklyData[w] || []).length, 1))
+    const playerWeekRow = (weeklyData[w] || []).find((r) => r.playerId === playerId)
+    return {
+      week: `W${w}`,
+      player: playerCumData?.weeks[w] || 0,
+      avg: cumAvg,
+      weekPts: playerWeekRow?.points || 0,
+      weekAvg,
+    }
   })
 
   // ── Prediction Breakdown ──
@@ -98,20 +107,6 @@ export default function PlayerProfile() {
   const totalPicks = Object.values(teamCounts).reduce((s, v) => s + v, 0)
   const teamLoyalty = (iplTeams || []).map((t) => ({ ...t, count: teamCounts[t.abbr] || 0 }))
 
-  // ── Prize Earnings ──
-  const prizeList = []
-  for (const w of weeksWithData) {
-    if (!weekComplete[w]) continue
-    const wd = weeklyData[w]
-    if (!wd) continue
-    const sorted = [...wd].sort((a, b) => b.points - a.points || b.wins - a.wins)
-    const idx = sorted.findIndex((r) => r.playerId === playerId)
-    const prize = WEEKLY_PRIZE[idx + 1]
-    if (prize && sorted[0].points > 0) {
-      prizeList.push({ week: w, prize, label: idx === 0 ? 'Winner' : 'Runner-up' })
-    }
-  }
-  const totalPrize = prizeList.reduce((s, p) => s + p.prize, 0)
 
   return (
     <div style={{ paddingBottom: 32 }}>
@@ -202,9 +197,9 @@ export default function PlayerProfile() {
               </defs>
               <XAxis dataKey="week" tick={{ fill: '#8899AA', fontSize: 10, fontWeight: 600 }} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} tickLine={false} />
               <YAxis tick={{ fill: '#8899AA', fontSize: 9 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: '#1A2D47', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11, color: '#fff' }} />
-              <Area type="monotone" dataKey="avg" stroke="#8899AA" strokeWidth={1.5} strokeDasharray="6 4" strokeOpacity={0.5} fill="none" name="Group Avg" />
-              <Area type="monotone" dataKey="player" stroke={playerColor} strokeWidth={2.5} fill={`url(#grad-${playerId})`} name={player.name} dot={{ r: 4, fill: playerColor }} />
+              <Tooltip content={<ChartTooltip playerName={player.name} playerColor={playerColor} />} />
+              <Area type="monotone" dataKey="avg" stroke="#8899AA" strokeWidth={1.5} strokeDasharray="6 4" strokeOpacity={0.5} fill="none" />
+              <Area type="monotone" dataKey="player" stroke={playerColor} strokeWidth={2.5} fill={`url(#grad-${playerId})`} dot={{ r: 4, fill: playerColor }} />
             </AreaChart>
           </ResponsiveContainer>
           <div style={{ display: 'flex', gap: 16, marginTop: 10, justifyContent: 'center' }}>
@@ -279,33 +274,6 @@ export default function PlayerProfile() {
         )}
       </Section>
 
-      {/* Prize Earnings */}
-      <Section title="Prize Earnings" accentColor="var(--gold)">
-        {prizeList.length === 0 ? (
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, textAlign: 'center', padding: '8px 0' }}>
-            No prizes yet — keep playing!
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {prizeList.map((p) => (
-              <div key={p.week} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: 10 }}>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700 }}>Week {p.week} — {p.label}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>Weekly prize</div>
-                </div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--gold)', fontVariantNumeric: 'tabular-nums' }}>₹{p.prize}</div>
-              </div>
-            ))}
-            <div style={{ marginTop: 4, padding: '12px 12px', background: 'linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,215,0,0.03))', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Earnings</div>
-                <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 2 }}>Out of ₹45,500 pool</div>
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--gold)', fontVariantNumeric: 'tabular-nums' }}>₹{totalPrize}</div>
-            </div>
-          </div>
-        )}
-      </Section>
     </div>
   )
 }
@@ -353,6 +321,37 @@ function LegendDot({ color, label }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 600, color: 'var(--text-secondary)' }}>
       <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
       {label}
+    </div>
+  )
+}
+
+function ChartTooltip({ active, payload, label, playerName, playerColor }) {
+  if (!active || !payload || !payload.length) return null
+  const d = payload[0]?.payload || {}
+  return (
+    <div style={{
+      background: '#1A2D47', border: '1px solid rgba(255,255,255,0.12)',
+      borderRadius: 10, padding: '10px 12px', fontSize: 11, minWidth: 160,
+    }}>
+      <div style={{ fontWeight: 800, color: '#fff', marginBottom: 8, letterSpacing: 0.3 }}>
+        {label}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <Row label="Overall (cumulative)" value={d.player} color={playerColor} />
+        <Row label="Group avg (cumulative)" value={d.avg} color="#8899AA" />
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 3, paddingTop: 5 }} />
+        <Row label={`${label} — ${playerName}`} value={d.weekPts} color={playerColor} />
+        <Row label={`${label} — Group avg`} value={d.weekAvg} color="#8899AA" />
+      </div>
+    </div>
+  )
+}
+
+function Row({ label, value, color }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+      <span style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{label}</span>
+      <span style={{ color, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{value ?? '—'}</span>
     </div>
   )
 }
