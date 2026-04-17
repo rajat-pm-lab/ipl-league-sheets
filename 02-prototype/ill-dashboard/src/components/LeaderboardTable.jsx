@@ -10,9 +10,9 @@ const LAPPA_LABELS = {
   Overall: 'Ultimate Lappa 🫣',
 }
 
-const gridCols = '28px 28px 1fr 26px 26px 22px 22px 22px 44px'
+const gridCols = '36px 28px 1fr 26px 26px 22px 22px 22px 44px'
 
-export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', weekComplete = false }) {
+export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', weekComplete = false, rankDeltas = {} }) {
   const navigate = useNavigate()
   const maxPts = Math.max(...leaderboard.map((r) => r.points), 1)
 
@@ -81,14 +81,28 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', we
             style={rowStyle}
             onClick={() => navigate(`/player/${row.playerId}`)}
           >
-            {/* Rank */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: rankIcons[row.rank] ? 14 : 12, fontWeight: 800,
-              color: rankColors[row.rank] || 'var(--text-secondary)',
-            }}>
-              {rankIcons[row.rank] || row.rank}
-            </div>
+            {/* Rank + delta */}
+            {(() => {
+              const delta = rankDeltas[row.playerId] ?? 0
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                  <div style={{
+                    fontSize: rankIcons[row.rank] ? 14 : 12, fontWeight: 800,
+                    color: rankColors[row.rank] || 'var(--text-secondary)', lineHeight: 1,
+                  }}>
+                    {rankIcons[row.rank] || row.rank}
+                  </div>
+                  {delta !== 0 && (
+                    <div style={{
+                      fontSize: 8, fontWeight: 800, lineHeight: 1,
+                      color: delta > 0 ? 'var(--green)' : 'var(--red)',
+                    }}>
+                      {delta > 0 ? `↑${delta}` : `↓${Math.abs(delta)}`}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Avatar */}
             <Avatar player={row.player} size={28} />

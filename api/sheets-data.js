@@ -1,5 +1,5 @@
 import { readMatchResults, readScoringRules, readWeekPredictions, readWeeklyRuleOverrides } from '../lib/sheets.js';
-import { computeWeeklyScores, computeCumulativePoints } from '../lib/scoring.js';
+import { computeWeeklyScores, computeCumulativePoints, rankLeaderboard, computeOverallLeaderboard } from '../lib/scoring.js';
 import { PLAYERS, IPL_TEAMS, STAGES, getStageForWeek } from '../lib/constants.js';
 
 export default async function handler(req, res) {
@@ -80,6 +80,56 @@ export default async function handler(req, res) {
     // Compute cumulative points for race chart
     const cumulativePoints = computeCumulativePoints(weeklyData);
 
+    // ── Rank deltas since last completed match ──
+    const playerLookup = {};
+    PLAYERS.forEach((p) => { playerLookup[p.id] = p; });
+
+    const completedMatches = matchResults
+      .filter((m) => m.winner)
+      .sort((a, b) => a.matchNum - b.matchNum);
+    const lastMatch = completedMatches.at(-1);
+
+    let rankDeltas = null;
+    if (lastMatch) {
+      const { matchNum: lastMatchNum, week: lastMatchWeek } = lastMatch;
+
+      // Weekly scores excluding the last match
+      const prevWeekData = computeWeeklyScores(
+        predictionsByWeek[lastMatchWeek] || {},
+        matchResults,
+        rules,
+        lastMatchWeek,
+        weeklyOverrides,
+        lastMatchNum - 1
+      );
+
+      // Weekly rank delta (for the week containing the last match)
+      const currWeekRanked = rankLeaderboard(weeklyData[lastMatchWeek] || [], playerLookup);
+      const prevWeekRanked = rankLeaderboard(prevWeekData, playerLookup);
+      const weeklyDeltas = {};
+      for (const curr of currWeekRanked) {
+        const prev = prevWeekRanked.find((r) => r.playerId === curr.playerId);
+        weeklyDeltas[curr.playerId] = prev ? prev.rank - curr.rank : 0;
+      }
+
+      // Overall rank delta
+      const prevWeeklyDataMap = { ...weeklyData, [lastMatchWeek]: prevWeekData };
+      const currOverall = computeOverallLeaderboard(weeklyData, playerLookup);
+      const prevOverall = computeOverallLeaderboard(prevWeeklyDataMap, playerLookup);
+      const overallDeltas = {};
+      for (const curr of currOverall) {
+        const prev = prevOverall.find((r) => r.playerId === curr.playerId);
+        overallDeltas[curr.playerId] = prev ? prev.rank - curr.rank : 0;
+      }
+
+      rankDeltas = {
+        weekly: weeklyDeltas,
+        overall: overallDeltas,
+        lastMatchWeek,
+        lastMatch: { matchNum: lastMatchNum, home: lastMatch.home, away: lastMatch.away },
+      };
+    }
+
     // Response
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
     return res.status(200).json({
@@ -93,6 +143,7 @@ export default async function handler(req, res) {
       currentWeek,
       weeklyRules,
       weekComplete,
+      rankDeltas,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err) {

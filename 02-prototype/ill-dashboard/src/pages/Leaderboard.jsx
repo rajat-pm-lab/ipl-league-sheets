@@ -199,6 +199,13 @@ export default function Leaderboard() {
               leaderboard={leaderboard}
               activeTab={activeTab}
               weekComplete={activeTab !== 'Weekly' || weekComplete}
+              rankDeltas={
+                activeTab === 'Overall'
+                  ? (data.rankDeltas?.overall || {})
+                  : activeTab === 'Weekly' && selectedWeek === data.rankDeltas?.lastMatchWeek
+                    ? (data.rankDeltas?.weekly || {})
+                    : {}
+              }
             />
       }
 
