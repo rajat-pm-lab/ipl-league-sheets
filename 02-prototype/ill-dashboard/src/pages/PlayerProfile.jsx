@@ -25,7 +25,7 @@ export default function PlayerProfile() {
     )
   }
 
-  const { players, weeklyData, allPredictions, cumulativePoints, currentWeek, weekComplete, stages, iplTeams } = data
+  const { players, weeklyData, allPredictions, cumulativePoints, currentWeek, weekComplete, stages, iplTeams, rankDeltas } = data
   const player = players.find((p) => p.id === playerId)
   if (!player) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>Player not found</div>
@@ -154,7 +154,7 @@ export default function PlayerProfile() {
           </div>
           <div>
             <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.3 }}>{player.name}</div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 5, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 5, flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--gold)', background: 'rgba(255,215,0,0.15)', padding: '3px 10px', borderRadius: 6, border: '1px solid rgba(255,215,0,0.2)' }}>
                 #{overallRank} Overall
               </span>
@@ -163,6 +163,19 @@ export default function PlayerProfile() {
                   {accuracy}% Acc
                 </span>
               )}
+              {(() => {
+                const delta = rankDeltas?.overall?.[playerId] ?? 0
+                return delta !== 0 ? (
+                  <span style={{
+                    fontSize: 11, fontWeight: 800,
+                    color: delta > 0 ? 'var(--green)' : 'var(--red)',
+                    background: delta > 0 ? 'rgba(0,200,83,0.12)' : 'rgba(255,23,68,0.12)',
+                    padding: '3px 10px', borderRadius: 6,
+                  }}>
+                    {delta > 0 ? `↑${delta}` : `↓${Math.abs(delta)}`}
+                  </span>
+                ) : null
+              })()}
             </div>
           </div>
         </div>
@@ -226,15 +239,20 @@ export default function PlayerProfile() {
                 </PieChart>
               </ResponsiveContainer>
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
-                <div style={{ fontSize: 17, fontWeight: 900, lineHeight: 1 }}>{totalPredicted}</div>
-                <div style={{ fontSize: 8, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 2 }}>MATCHES</div>
+                <div style={{ fontSize: 15, fontWeight: 900, lineHeight: 1, color: 'var(--green)' }}>{accuracy !== '—' ? `${accuracy}%` : '—'}</div>
+                <div style={{ fontSize: 8, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 2 }}>ACC</div>
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 3, background: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, flex: 1 }}>Total matches</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{totalPredicted}</span>
+              </div>
               {donutData.map((d) => (
                 <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, flex: 1 }}>{d.name}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600, flex: 1 }}>{d.name}</span>
                   <span style={{ fontSize: 14, fontWeight: 800, color: d.color, fontVariantNumeric: 'tabular-nums' }}>{d.value}</span>
                 </div>
               ))}

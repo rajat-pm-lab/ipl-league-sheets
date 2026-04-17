@@ -81,28 +81,15 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', we
             style={rowStyle}
             onClick={() => navigate(`/player/${row.playerId}`)}
           >
-            {/* Rank + delta */}
-            {(() => {
-              const delta = rankDeltas[row.playerId] ?? 0
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                  <div style={{
-                    fontSize: rankIcons[row.rank] ? 14 : 12, fontWeight: 800,
-                    color: rankColors[row.rank] || 'var(--text-secondary)', lineHeight: 1,
-                  }}>
-                    {rankIcons[row.rank] || row.rank}
-                  </div>
-                  {delta !== 0 && (
-                    <div style={{
-                      fontSize: 8, fontWeight: 800, lineHeight: 1,
-                      color: delta > 0 ? 'var(--green)' : 'var(--red)',
-                    }}>
-                      {delta > 0 ? `↑${delta}` : `↓${Math.abs(delta)}`}
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
+            {/* Rank */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{
+                fontSize: rankIcons[row.rank] ? 14 : 12, fontWeight: 800,
+                color: rankColors[row.rank] || 'var(--text-secondary)', lineHeight: 1,
+              }}>
+                {rankIcons[row.rank] || row.rank}
+              </div>
+            </div>
 
             {/* Avatar */}
             <Avatar player={row.player} size={28} />
@@ -111,7 +98,19 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', we
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 4 }}>
                 {row.player.name}
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                {(() => {
+                  const delta = rankDeltas[row.playerId] ?? 0
+                  return delta !== 0 ? (
+                    <span style={{
+                      fontSize: 8, fontWeight: 800, lineHeight: 1,
+                      color: delta > 0 ? 'var(--green)' : 'var(--red)',
+                      background: delta > 0 ? 'rgba(0,200,83,0.12)' : 'rgba(255,23,68,0.12)',
+                      padding: '1px 4px', borderRadius: 4, flexShrink: 0,
+                    }}>
+                      {delta > 0 ? `↑${delta}` : `↓${Math.abs(delta)}`}
+                    </span>
+                  ) : null
+                })()}
               </div>
               {weekComplete && isFirst && (
                 <span style={{
