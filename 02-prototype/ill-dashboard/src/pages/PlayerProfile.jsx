@@ -25,7 +25,7 @@ export default function PlayerProfile() {
     )
   }
 
-  const { players, weeklyData, allPredictions, cumulativePoints, currentWeek, weekComplete, stages, iplTeams, rankDeltas, teamAccuracy } = data
+  const { players, weeklyData, allPredictions, cumulativePoints, currentWeek, weekComplete, stages, iplTeams, rankDeltas, teamAccuracy, teamFormData } = data
   const player = players.find((p) => p.id === playerId)
   if (!player) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>Player not found</div>
@@ -120,6 +120,18 @@ export default function PlayerProfile() {
     .filter((t) => t.total > 0)
     .sort((a, b) => b.total - a.total)
 
+  // ── Tournament form: team home/away performance ──
+  const formList = (iplTeams || [])
+    .map((t) => {
+      const form = (teamFormData || {})[t.abbr]
+      return { ...t, home: form?.home || null, away: form?.away || null }
+    })
+    .filter((t) => t.home || t.away)
+    .sort((a, b) => {
+      const aPlayed = (a.home?.w || 0) + (a.home?.l || 0) + (a.away?.w || 0) + (a.away?.l || 0)
+      const bPlayed = (b.home?.w || 0) + (b.home?.l || 0) + (b.away?.w || 0) + (b.away?.l || 0)
+      return bPlayed - aPlayed
+    })
 
   return (
     <div style={{ paddingBottom: 32 }}>
@@ -342,6 +354,71 @@ export default function PlayerProfile() {
         )}
       </Section>
 
+      {/* The Homework You Didn't Do */}
+      <Section title="The Homework You Didn't Do 📚" accentColor="var(--gold)">
+        {formList.length === 0 ? (
+          <EmptyState label="No match results yet — go study something else" />
+        ) : (
+          <>
+            <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 12, lineHeight: 1.4 }}>
+              Each team's actual form this season. Score 1–10 = how likely they are to win at home or away.
+              Use this. We beg you.
+            </div>
+            {/* Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 1fr', gap: 6, marginBottom: 6, padding: '0 2px' }}>
+              <div />
+              <div style={{ textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>🏡 Home</div>
+              <div style={{ textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>✈️ Away</div>
+            </div>
+            {formList.map(({ abbr, color: teamColor, home, away }) => (
+              <div key={abbr} style={{ display: 'grid', gridTemplateColumns: '56px 1fr 1fr', gap: 6, marginBottom: 5, alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: teamColor || '#8899AA', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, fontWeight: 800, color: teamColor || 'var(--text-secondary)' }}>{abbr}</span>
+                </div>
+                <FormCell form={home} />
+                <FormCell form={away} />
+              </div>
+            ))}
+            <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 600, marginTop: 10, textAlign: 'center', lineHeight: 1.5 }}>
+              Updates after every match ⚡ · NR = No Result (not counted in score)
+            </div>
+          </>
+        )}
+      </Section>
+
+    </div>
+  )
+}
+
+function FormCell({ form }) {
+  if (!form) {
+    return (
+      <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 6, padding: '5px 4px', textAlign: 'center' }}>
+        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.15)', fontWeight: 600 }}>—</span>
+      </div>
+    )
+  }
+  const { w, l, nr, score } = form
+  const played = w + l
+  const color = score === null ? '#607D8B'
+    : score >= 7 ? 'var(--green)'
+    : score >= 4 ? 'var(--gold)'
+    : 'var(--red)'
+  const label = score === null ? '—'
+    : score >= 8 ? '🔥'
+    : score >= 6 ? '💪'
+    : score >= 4 ? '😬'
+    : '💀'
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 6, padding: '5px 4px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.04)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+        <span style={{ fontSize: 13, fontWeight: 900, color, lineHeight: 1 }}>{score ?? '—'}</span>
+        <span style={{ fontSize: 10, lineHeight: 1 }}>{score !== null ? label : ''}</span>
+      </div>
+      <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 2 }}>
+        {played > 0 ? `${w}W ${l}L${nr > 0 ? ` ${nr}NR` : ''}` : 'No games'}
+      </div>
     </div>
   )
 }

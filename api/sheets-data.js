@@ -80,6 +80,38 @@ export default async function handler(req, res) {
     // Compute cumulative points for race chart
     const cumulativePoints = computeCumulativePoints(weeklyData);
 
+    // ── Team form data: each team's home/away performance in the tournament ──
+    const teamFormRaw = {};
+    for (const m of matchResults) {
+      if (!m.winner) continue; // skip unplayed
+      const isNR = m.winner === 'NR';
+      for (const slot of ['home', 'away']) {
+        const abbr = slot === 'home' ? m.home : m.away;
+        if (!abbr) continue;
+        if (!teamFormRaw[abbr]) teamFormRaw[abbr] = { home: { w: 0, l: 0, nr: 0 }, away: { w: 0, l: 0, nr: 0 } };
+        if (isNR) {
+          teamFormRaw[abbr][slot].nr++;
+        } else if (m.winner === abbr) {
+          teamFormRaw[abbr][slot].w++;
+        } else {
+          teamFormRaw[abbr][slot].l++;
+        }
+      }
+    }
+    // Attach confidence score 1-10 (based on win rate, excluding NR)
+    const teamFormData = {};
+    for (const [abbr, form] of Object.entries(teamFormRaw)) {
+      const scoreFor = (s) => {
+        const played = s.w + s.l;
+        if (played === 0) return null;
+        return Math.max(1, Math.round((s.w / played) * 10));
+      };
+      teamFormData[abbr] = {
+        home: { ...form.home, score: scoreFor(form.home) },
+        away: { ...form.away, score: scoreFor(form.away) },
+      };
+    }
+
     // ── Team-wise home/away accuracy per player ──
     // Computed server-side so matchNum alignment matches scoring.js exactly
     const teamAccuracy = {};
@@ -163,6 +195,7 @@ export default async function handler(req, res) {
       weekComplete,
       rankDeltas,
       teamAccuracy,
+      teamFormData,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err) {
