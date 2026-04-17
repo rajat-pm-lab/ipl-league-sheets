@@ -25,7 +25,7 @@ export default function PlayerProfile() {
     )
   }
 
-  const { players, weeklyData, allPredictions, cumulativePoints, currentWeek, weekComplete, stages, iplTeams, rankDeltas } = data
+  const { players, weeklyData, allPredictions, cumulativePoints, currentWeek, weekComplete, stages, iplTeams, rankDeltas, matchSchedule } = data
   const player = players.find((p) => p.id === playerId)
   if (!player) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>Player not found</div>
@@ -106,6 +106,37 @@ export default function PlayerProfile() {
   }
   const totalPicks = Object.values(teamCounts).reduce((s, v) => s + v, 0)
   const teamLoyalty = (iplTeams || []).map((t) => ({ ...t, count: teamCounts[t.abbr] || 0 }))
+
+  // ── Team-wise Home/Away Accuracy ──
+  const teamAccuracyMap = {}
+  for (const [weekStr, weekPreds] of Object.entries(allPredictions || {})) {
+    const week = Number(weekStr)
+    const picks = (weekPreds || {})[playerId] || {}
+    const weekMatches = (matchSchedule || {})[week] || []
+    for (const [key, pickedTeam] of Object.entries(picks)) {
+      if (key.startsWith('_') || !pickedTeam) continue
+      const matchNum = Number(key)
+      const match = weekMatches.find((m) => m.matchNum === matchNum)
+      // Only count played matches with a real winner (skip NR / unplayed)
+      if (!match || typeof match.winner !== 'string' || !match.winner) continue
+      if (!teamAccuracyMap[pickedTeam]) {
+        teamAccuracyMap[pickedTeam] = { home: { a: 0, c: 0 }, away: { a: 0, c: 0 } }
+      }
+      const slot = pickedTeam === match.home ? 'home' : 'away'
+      teamAccuracyMap[pickedTeam][slot].a++
+      if (match.winner === pickedTeam) teamAccuracyMap[pickedTeam][slot].c++
+    }
+  }
+  const teamAccuracyList = Object.entries(teamAccuracyMap)
+    .map(([abbr, stats]) => ({
+      abbr,
+      home: stats.home,
+      away: stats.away,
+      total: stats.home.a + stats.away.a,
+      teamInfo: (iplTeams || []).find((t) => t.abbr === abbr),
+    }))
+    .filter((t) => t.total > 0)
+    .sort((a, b) => b.total - a.total)
 
 
   return (
@@ -292,6 +323,60 @@ export default function PlayerProfile() {
         )}
       </Section>
 
+      {/* Team-wise Accuracy */}
+      <Section title="Team-wise Accuracy" accentColor="#2979FF">
+        {teamAccuracyList.length === 0 ? (
+          <EmptyState label="No completed predictions yet" />
+        ) : (
+          <>
+            {/* Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr 1fr', gap: 6, marginBottom: 8, padding: '0 2px' }}>
+              <div />
+              <div style={{ textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Home</div>
+              <div style={{ textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Away</div>
+            </div>
+            {teamAccuracyList.map(({ abbr, home, away, teamInfo }) => {
+              const teamColor = teamInfo?.color || '#8899AA'
+              const homePct = home.a > 0 ? Math.round((home.c / home.a) * 100) : null
+              const awayPct = away.a > 0 ? Math.round((away.c / away.a) * 100) : null
+              return (
+                <div key={abbr} style={{ display: 'grid', gridTemplateColumns: '64px 1fr 1fr', gap: 6, marginBottom: 5, alignItems: 'center' }}>
+                  {/* Team label */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: 2, background: teamColor, flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, fontWeight: 800, color: teamColor }}>{abbr}</span>
+                  </div>
+                  {/* Home cell */}
+                  <AccCell attempts={home.a} correct={home.c} pct={homePct} />
+                  {/* Away cell */}
+                  <AccCell attempts={away.a} correct={away.c} pct={awayPct} />
+                </div>
+              )
+            })}
+            <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 600, marginTop: 8, textAlign: 'center' }}>
+              Only completed matches with a winner counted
+            </div>
+          </>
+        )}
+      </Section>
+
+    </div>
+  )
+}
+
+function AccCell({ attempts, correct, pct }) {
+  if (attempts === 0) {
+    return (
+      <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 6, padding: '5px 4px', textAlign: 'center' }}>
+        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.15)', fontWeight: 600 }}>—</span>
+      </div>
+    )
+  }
+  const color = pct >= 60 ? 'var(--green)' : pct >= 40 ? 'var(--gold)' : 'var(--red)'
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 6, padding: '5px 4px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.04)' }}>
+      <div style={{ fontSize: 13, fontWeight: 900, color, lineHeight: 1 }}>{pct}%</div>
+      <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 2 }}>{correct}/{attempts}</div>
     </div>
   )
 }

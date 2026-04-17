@@ -10,7 +10,7 @@ const LAPPA_LABELS = {
   Overall: 'Ultimate Lappa 🫣',
 }
 
-const gridCols = '36px 28px 1fr 26px 26px 22px 22px 22px 44px'
+const gridCols = '36px 28px 1fr 26px 26px 22px 22px 22px 44px 14px'
 
 export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', weekComplete = false, rankDeltas = {} }) {
   const navigate = useNavigate()
@@ -48,6 +48,7 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', we
         <span style={{ textAlign: 'center' }}>L</span>
         <span style={{ textAlign: 'center' }}>D</span>
         <span style={{ textAlign: 'right' }}>Pts</span>
+        <span />
       </div>
 
       {/* Rows */}
@@ -154,6 +155,13 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', we
                     : 'linear-gradient(90deg, var(--blue), var(--gold))',
                 }} />
               </div>
+            </div>
+
+            {/* Profile chevron */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)' }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </div>
           </div>
         )
