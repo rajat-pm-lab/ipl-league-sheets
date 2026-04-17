@@ -25,7 +25,7 @@ export default function PlayerProfile() {
     )
   }
 
-  const { players, weeklyData, allPredictions, cumulativePoints, currentWeek, weekComplete, stages, iplTeams, rankDeltas, matchSchedule } = data
+  const { players, weeklyData, allPredictions, cumulativePoints, currentWeek, weekComplete, stages, iplTeams, rankDeltas, teamAccuracy } = data
   const player = players.find((p) => p.id === playerId)
   if (!player) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>Player not found</div>
@@ -107,27 +107,9 @@ export default function PlayerProfile() {
   const totalPicks = Object.values(teamCounts).reduce((s, v) => s + v, 0)
   const teamLoyalty = (iplTeams || []).map((t) => ({ ...t, count: teamCounts[t.abbr] || 0 }))
 
-  // ── Team-wise Home/Away Accuracy ──
-  const teamAccuracyMap = {}
-  for (const [weekStr, weekPreds] of Object.entries(allPredictions || {})) {
-    const week = Number(weekStr)
-    const picks = (weekPreds || {})[playerId] || {}
-    const weekMatches = (matchSchedule || {})[week] || []
-    for (const [key, pickedTeam] of Object.entries(picks)) {
-      if (key.startsWith('_') || !pickedTeam) continue
-      const matchNum = Number(key)
-      const match = weekMatches.find((m) => m.matchNum === matchNum)
-      // Only count played matches with a real winner (skip NR / unplayed)
-      if (!match || typeof match.winner !== 'string' || !match.winner) continue
-      if (!teamAccuracyMap[pickedTeam]) {
-        teamAccuracyMap[pickedTeam] = { home: { a: 0, c: 0 }, away: { a: 0, c: 0 } }
-      }
-      const slot = pickedTeam === match.home ? 'home' : 'away'
-      teamAccuracyMap[pickedTeam][slot].a++
-      if (match.winner === pickedTeam) teamAccuracyMap[pickedTeam][slot].c++
-    }
-  }
-  const teamAccuracyList = Object.entries(teamAccuracyMap)
+  // ── Team-wise Home/Away Accuracy (server-computed) ──
+  const playerTeamAcc = (teamAccuracy || {})[playerId] || {}
+  const teamAccuracyList = Object.entries(playerTeamAcc)
     .map(([abbr, stats]) => ({
       abbr,
       home: stats.home,

@@ -80,6 +80,24 @@ export default async function handler(req, res) {
     // Compute cumulative points for race chart
     const cumulativePoints = computeCumulativePoints(weeklyData);
 
+    // ── Team-wise home/away accuracy per player ──
+    // Computed server-side so matchNum alignment matches scoring.js exactly
+    const teamAccuracy = {};
+    for (const player of PLAYERS) {
+      const playerAcc = {};
+      for (const m of matchResults) {
+        // Only completed matches with a real winner
+        if (!m.winner || m.winner === 'NR') continue;
+        const pick = (predictionsByWeek[m.week] || {})[player.id]?.[m.matchNum];
+        if (!pick) continue;
+        if (!playerAcc[pick]) playerAcc[pick] = { home: { a: 0, c: 0 }, away: { a: 0, c: 0 } };
+        const slot = pick === m.home ? 'home' : 'away';
+        playerAcc[pick][slot].a++;
+        if (pick === m.winner) playerAcc[pick][slot].c++;
+      }
+      teamAccuracy[player.id] = playerAcc;
+    }
+
     // ── Rank deltas since last completed match ──
     const playerLookup = {};
     PLAYERS.forEach((p) => { playerLookup[p.id] = p; });
@@ -144,6 +162,7 @@ export default async function handler(req, res) {
       weeklyRules,
       weekComplete,
       rankDeltas,
+      teamAccuracy,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err) {
