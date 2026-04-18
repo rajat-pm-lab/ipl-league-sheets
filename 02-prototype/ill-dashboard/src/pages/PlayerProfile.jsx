@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { PieChart, Pie, Cell } from 'recharts'
@@ -16,6 +17,7 @@ export default function PlayerProfile() {
   const navigate = useNavigate()
   const { data, loading } = useLeagueData()
   const playerId = Number(id)
+  const [formSort, setFormSort] = useState({ col: null, dir: 'desc' })
 
   if (loading || !data) {
     return (
@@ -128,10 +130,23 @@ export default function PlayerProfile() {
     })
     .filter((t) => t.home || t.away)
     .sort((a, b) => {
+      if (formSort.col) {
+        const aScore = a[formSort.col]?.score ?? -1
+        const bScore = b[formSort.col]?.score ?? -1
+        return formSort.dir === 'desc' ? bScore - aScore : aScore - bScore
+      }
       const aPlayed = (a.home?.w || 0) + (a.home?.l || 0) + (a.away?.w || 0) + (a.away?.l || 0)
       const bPlayed = (b.home?.w || 0) + (b.home?.l || 0) + (b.away?.w || 0) + (b.away?.l || 0)
       return bPlayed - aPlayed
     })
+
+  const toggleFormSort = (col) => {
+    setFormSort((prev) =>
+      prev.col === col
+        ? { col, dir: prev.dir === 'desc' ? 'asc' : 'desc' }
+        : { col, dir: 'desc' }
+    )
+  }
 
   return (
     <div style={{ paddingBottom: 32 }}>
@@ -367,8 +382,27 @@ export default function PlayerProfile() {
             {/* Header */}
             <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 1fr', gap: 6, marginBottom: 6, padding: '0 2px' }}>
               <div />
-              <div style={{ textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>🏡 Home</div>
-              <div style={{ textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>✈️ Away</div>
+              {['home', 'away'].map((col) => {
+                const isActive = formSort.col === col
+                const icon = !isActive ? '⇅' : formSort.dir === 'desc' ? '↓' : '↑'
+                return (
+                  <button
+                    key={col}
+                    onClick={() => toggleFormSort(col)}
+                    style={{
+                      background: isActive ? 'rgba(255,215,0,0.1)' : 'transparent',
+                      border: isActive ? '1px solid rgba(255,215,0,0.2)' : '1px solid transparent',
+                      borderRadius: 6, cursor: 'pointer', padding: '3px 4px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                    }}
+                  >
+                    <span style={{ fontSize: 9, fontWeight: 800, color: isActive ? 'var(--gold)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {col === 'home' ? '🏡 Home' : '✈️ Away'}
+                    </span>
+                    <span style={{ fontSize: 9, color: isActive ? 'var(--gold)' : 'rgba(255,255,255,0.25)', fontWeight: 800 }}>{icon}</span>
+                  </button>
+                )
+              })}
             </div>
             {formList.map(({ abbr, color: teamColor, home, away }) => (
               <div key={abbr} style={{ display: 'grid', gridTemplateColumns: '56px 1fr 1fr', gap: 6, marginBottom: 5, alignItems: 'center' }}>
