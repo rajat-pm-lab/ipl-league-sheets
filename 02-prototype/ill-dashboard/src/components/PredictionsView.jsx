@@ -276,134 +276,163 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
       </div>
 
       {expanded && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '8px 8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '6px 8px 10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
           {players.map((p) => {
             const playerPicks = weekPredictions[p.id] || {}
-            const pick = playerPicks[match.matchNum]
+            const isLate = (playerPicks._lateMatches || []).includes(match.matchNum)
+            const effectivePick = isLate ? null : playerPicks[match.matchNum]
+            const pick = playerPicks[match.matchNum]  // always show what they picked (even if late)
             const pickedTeam = IPL_TEAMS.find((t) => t.abbr === pick)
             const isDD = playerPicks._doubleDip === match.matchNum
             const hateTeam = playerPicks._hateTeam
             const hateTeamPlaying = hateTeam && (match.home === hateTeam || match.away === hateTeam)
             const isHate = hateTeamPlaying && !isDD
-            // Week 4 mechanics
-            const isLate = (playerPicks._lateMatches || []).includes(match.matchNum)
             const tripleDipSlot = !isLate && playerPicks._tripleDips
-              ? playerPicks._tripleDips.indexOf(match.matchNum)  // 0=TD1, 1=TD2, -1=not TD
+              ? playerPicks._tripleDips.indexOf(match.matchNum)
               : -1
             const isTD = tripleDipSlot >= 0
-            const tdLabel = isTD ? `🚀 TD${tripleDipSlot + 1}` : null
             const isCannibalisedForMe = !isLate && cannibResolution[p.id]?.matchNum === match.matchNum
             const cannibalisedBy = isCannibalisedForMe
               ? (cannibResolution[p.id].by || []).map((bid) => players.find((pl) => pl.id === bid)?.name).filter(Boolean).join(', ')
               : null
-
-            // Determine outcome, chip style, row style, and points
-            let chip = null
-            let bg = 'rgba(255,255,255,0.02)'
-            let borderColor = 'rgba(255,255,255,0.04)'
-            let pts = null
-            let ptsColor = 'var(--text-secondary)'
-
             const confidence = playerPicks._confidence?.[match.matchNum]
 
+            // ── Determine accent, mechanic tag, points ──
+            let accentColor = 'rgba(255,255,255,0.06)'
+            let rowBg = 'transparent'
+            let tag = null        // { label, color, bg }
+            let pts = null
+            let ptsColor = 'rgba(255,255,255,0.3)'
+            let pickMuted = false
+
             if (isLate) {
-              // Late submission — no prediction counts, always 0
-              chip = <StatusChip label="⏰ Late" chipBg="rgba(255,152,0,0.12)" chipColor="#FF9800" chipBorder="rgba(255,152,0,0.25)" />
-              bg = 'rgba(255,152,0,0.03)'; borderColor = 'rgba(255,152,0,0.1)'
-              pts = '0'; ptsColor = 'rgba(255,255,255,0.3)'
+              accentColor = '#D97706'
+              rowBg = 'rgba(217,119,6,0.04)'
+              tag = { label: '⏰ Late', color: '#FCD34D', bg: 'rgba(217,119,6,0.14)' }
+              pts = '0'; pickMuted = true
+
             } else if (isCannibalisedForMe) {
-              // Cannibalised — always 0 pts; always show who did it
-              chip = <StatusChip label={`💀 by ${cannibalisedBy}`} chipBg="rgba(255,64,129,0.15)" chipColor="#FF4081" chipBorder="rgba(255,64,129,0.3)" />
-              bg = 'rgba(255,64,129,0.04)'; borderColor = 'rgba(255,64,129,0.15)'
-              pts = '0'; ptsColor = 'rgba(255,255,255,0.3)'
+              accentColor = '#EF4444'
+              rowBg = 'rgba(239,68,68,0.04)'
+              tag = { label: `💀 ${cannibalisedBy}`, color: '#FCA5A5', bg: 'rgba(239,68,68,0.12)' }
+              pts = '0'; pickMuted = true
+
             } else if (isPending) {
-              // Upcoming match — show mechanic indicators, no outcome colouring
               if (isTD) {
-                chip = <StatusChip label={tdLabel} chipBg="rgba(224,64,251,0.15)" chipColor="#E040FB" chipBorder="rgba(224,64,251,0.3)" />
-                borderColor = 'rgba(224,64,251,0.12)'
+                accentColor = '#7C3AED'
+                tag = { label: tripleDipSlot === 0 ? 'TD1' : 'TD2', color: '#A78BFA', bg: 'rgba(124,58,237,0.14)' }
               } else if (confidence !== undefined) {
-                chip = <StatusChip label={`×${confidence}`} chipBg="rgba(255,215,0,0.15)" chipColor="#FFD700" chipBorder="rgba(255,215,0,0.3)" />
-                borderColor = 'rgba(255,215,0,0.12)'
+                accentColor = '#D97706'
+                tag = { label: `×${confidence}`, color: '#FCD34D', bg: 'rgba(217,119,6,0.12)' }
               } else if (isDD) {
-                chip = <StatusChip label="🎯 DD" chipBg="rgba(255,152,0,0.15)" chipColor="#FF9800" chipBorder="rgba(255,152,0,0.3)" />
-                borderColor = 'rgba(255,152,0,0.12)'
+                accentColor = '#B45309'
+                tag = { label: 'DD', color: '#FCD34D', bg: 'rgba(180,83,9,0.14)' }
               } else if (isHate) {
-                chip = <StatusChip label={`💀 ${hateTeam}`} chipBg="rgba(233,30,99,0.12)" chipColor="#FF4081" chipBorder="rgba(233,30,99,0.25)" />
-                borderColor = 'rgba(233,30,99,0.1)'
+                accentColor = 'rgba(255,255,255,0.15)'
+                tag = { label: `HT ${hateTeam}`, color: '#94A3B8', bg: 'rgba(148,163,184,0.1)' }
               }
+
             } else if (isNoResult) {
-              chip = <StatusChip label="◎ NR" chipBg="rgba(41,121,255,0.15)" chipColor="var(--blue)" chipBorder="rgba(41,121,255,0.3)" />
-              bg = 'rgba(41,121,255,0.05)'; borderColor = 'rgba(41,121,255,0.12)'
-              pts = '0'; ptsColor = 'var(--text-secondary)'
+              accentColor = '#3B82F6'
+              rowBg = 'rgba(59,130,246,0.04)'
+              tag = { label: 'NR', color: '#93C5FD', bg: 'rgba(59,130,246,0.12)' }
+              pts = '0'
+
             } else if (isTD) {
-              // Triple Dip result
-              const tdCorrect = pick === match.winner
-              chip = tdCorrect
-                ? <StatusChip label={`${tdLabel} +30`} chipBg="rgba(224,64,251,0.18)" chipColor="#E040FB" chipBorder="rgba(224,64,251,0.35)" />
-                : <StatusChip label={`${tdLabel} -20`} chipBg="rgba(255,23,68,0.15)" chipColor="var(--red)" chipBorder="rgba(255,23,68,0.28)" />
-              bg = tdCorrect ? 'rgba(224,64,251,0.05)' : 'rgba(255,23,68,0.03)'
-              borderColor = tdCorrect ? 'rgba(224,64,251,0.2)' : 'rgba(255,23,68,0.1)'
-              pts = tdCorrect ? '+30' : (pick ? '-20' : null)
-              ptsColor = tdCorrect ? '#E040FB' : 'var(--red)'
+              const tdCorrect = effectivePick === match.winner
+              accentColor = tdCorrect ? '#7C3AED' : '#DC2626'
+              rowBg = tdCorrect ? 'rgba(124,58,237,0.05)' : 'rgba(220,38,38,0.04)'
+              const slot = tripleDipSlot === 0 ? 'TD1' : 'TD2'
+              tag = tdCorrect
+                ? { label: `${slot} +30`, color: '#A78BFA', bg: 'rgba(124,58,237,0.14)' }
+                : { label: `${slot} −20`, color: '#FCA5A5', bg: 'rgba(220,38,38,0.12)' }
+              pts = tdCorrect ? '+30' : (effectivePick ? '−20' : null)
+              ptsColor = tdCorrect ? '#A78BFA' : '#F87171'
+
             } else if (confidence !== undefined) {
-              const confCorrect = pick === match.winner
-              chip = confCorrect
-                ? <StatusChip label={`✓ ×${confidence}`} chipBg="rgba(0,200,83,0.18)" chipColor="var(--green)" chipBorder="rgba(0,200,83,0.3)" />
-                : <StatusChip label={`✗ ×${confidence}`} chipBg="rgba(255,23,68,0.15)" chipColor="var(--red)" chipBorder="rgba(255,23,68,0.28)" />
-              bg = confCorrect ? 'rgba(0,200,83,0.05)' : 'rgba(255,23,68,0.03)'
-              borderColor = confCorrect ? 'rgba(0,200,83,0.15)' : 'rgba(255,23,68,0.1)'
-              pts = confCorrect ? `+${10 + confidence}` : `-${confidence}`
-              ptsColor = confCorrect ? 'var(--green)' : 'var(--red)'
+              const confCorrect = effectivePick === match.winner
+              accentColor = confCorrect ? '#059669' : '#DC2626'
+              rowBg = confCorrect ? 'rgba(5,150,105,0.05)' : 'rgba(220,38,38,0.04)'
+              tag = confCorrect
+                ? { label: `×${confidence}`, color: '#34D399', bg: 'rgba(52,211,153,0.1)' }
+                : { label: `×${confidence}`, color: '#FCA5A5', bg: 'rgba(220,38,38,0.1)' }
+              pts = confCorrect ? `+${10 + confidence}` : `−${confidence}`
+              ptsColor = confCorrect ? '#34D399' : '#F87171'
+
             } else if (isHate) {
               const htWon = match.winner === hateTeam
-              chip = <StatusChip label={`💀 ${hateTeam}`} chipBg="rgba(233,30,99,0.18)" chipColor="#FF4081" chipBorder="rgba(233,30,99,0.35)" />
-              bg = htWon ? 'rgba(255,23,68,0.04)' : 'rgba(0,200,83,0.05)'
-              borderColor = htWon ? 'rgba(255,23,68,0.12)' : 'rgba(0,200,83,0.15)'
-              pts = htWon ? '-5' : '+15'; ptsColor = htWon ? 'var(--red)' : 'var(--green)'
+              accentColor = htWon ? '#DC2626' : '#059669'
+              rowBg = htWon ? 'rgba(220,38,38,0.04)' : 'rgba(5,150,105,0.04)'
+              tag = { label: `HT ${hateTeam}`, color: '#94A3B8', bg: 'rgba(148,163,184,0.08)' }
+              pts = htWon ? '−5' : '+15'
+              ptsColor = htWon ? '#F87171' : '#34D399'
+
             } else if (isDD) {
-              const ddCorrect = pick === match.winner
-              chip = <StatusChip label="🎯 DD" chipBg="rgba(255,152,0,0.18)" chipColor="#FF9800" chipBorder="rgba(255,152,0,0.35)" />
-              bg = ddCorrect ? 'rgba(255,152,0,0.07)' : 'rgba(255,23,68,0.04)'
-              borderColor = ddCorrect ? 'rgba(255,152,0,0.25)' : 'rgba(255,23,68,0.12)'
-              pts = ddCorrect ? '+20' : (pick ? '-10' : null)
-              ptsColor = ddCorrect ? '#FF9800' : 'var(--red)'
-            } else if (pick) {
-              const correct = pick === match.winner
-              chip = correct
-                ? <StatusChip label="✓" chipBg="rgba(0,200,83,0.18)" chipColor="var(--green)" chipBorder="rgba(0,200,83,0.3)" />
-                : <StatusChip label="✗" chipBg="rgba(255,23,68,0.15)" chipColor="var(--red)" chipBorder="rgba(255,23,68,0.28)" />
-              bg = correct ? 'rgba(0,200,83,0.05)' : 'rgba(255,23,68,0.03)'
-              borderColor = correct ? 'rgba(0,200,83,0.15)' : 'rgba(255,23,68,0.1)'
-              pts = correct ? '+10' : '0'; ptsColor = correct ? 'var(--green)' : 'rgba(255,255,255,0.3)'
+              const ddCorrect = effectivePick === match.winner
+              accentColor = ddCorrect ? '#B45309' : '#DC2626'
+              rowBg = ddCorrect ? 'rgba(180,83,9,0.06)' : 'rgba(220,38,38,0.04)'
+              tag = { label: 'DD', color: '#FCD34D', bg: 'rgba(180,83,9,0.14)' }
+              pts = ddCorrect ? '+20' : (effectivePick ? '−10' : null)
+              ptsColor = ddCorrect ? '#FCD34D' : '#F87171'
+
+            } else if (effectivePick) {
+              const correct = effectivePick === match.winner
+              accentColor = correct ? '#059669' : 'rgba(255,255,255,0.08)'
+              rowBg = correct ? 'rgba(5,150,105,0.04)' : 'transparent'
+              pts = correct ? '+10' : '0'
+              ptsColor = correct ? '#34D399' : 'rgba(255,255,255,0.25)'
             }
+
+            const pickColor = pickMuted
+              ? 'rgba(255,255,255,0.2)'
+              : (pickedTeam?.color || 'rgba(255,255,255,0.35)')
 
             return (
               <div key={p.id} style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 10px', borderRadius: 10,
-                background: bg, border: `1px solid ${borderColor}`,
+                padding: '7px 10px 7px 12px', borderRadius: 8,
+                background: rowBg,
+                borderLeft: `2px solid ${accentColor}`,
               }}>
-                {/* Status chip — leftmost */}
-                <div style={{ minWidth: 44, flexShrink: 0 }}>
-                  {chip}
-                </div>
-                {/* Avatar + name */}
-                <Avatar player={p} size={26} />
-                <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {/* Avatar + Name — left, flex */}
+                <Avatar player={p} size={24} />
+                <span style={{
+                  flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  color: 'var(--text)',
+                }}>
                   {p.name}
-                </div>
-                {/* Separator */}
-                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
-                {/* Pick */}
-                <div style={{ fontSize: 12, fontWeight: 900, color: pickedTeam?.color || 'var(--text-secondary)', flexShrink: 0, minWidth: 28, textAlign: 'center' }}>
-                  {pick || (isHate ? '—' : '—')}
-                </div>
-                {/* Points */}
-                {pts !== null && (
-                  <div style={{ fontSize: 13, fontWeight: 900, color: ptsColor, flexShrink: 0, minWidth: 30, textAlign: 'right' }}>
-                    {pts}
-                  </div>
+                </span>
+
+                {/* Mechanic tag — right of name */}
+                {tag && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: 0.4,
+                    padding: '2px 6px', borderRadius: 4, flexShrink: 0,
+                    color: tag.color, background: tag.bg, whiteSpace: 'nowrap',
+                  }}>
+                    {tag.label}
+                  </span>
                 )}
+
+                {/* Pick */}
+                <span style={{
+                  fontSize: 12, fontWeight: 900, flexShrink: 0,
+                  minWidth: 30, textAlign: 'right',
+                  color: pickColor,
+                  opacity: pickMuted ? 0.5 : 1,
+                }}>
+                  {pick || '—'}
+                </span>
+
+                {/* Points */}
+                <span style={{
+                  fontSize: 12, fontWeight: 900, flexShrink: 0,
+                  minWidth: 30, textAlign: 'right',
+                  color: pts !== null ? ptsColor : 'transparent',
+                }}>
+                  {pts ?? '—'}
+                </span>
               </div>
             )
           })}
@@ -430,20 +459,6 @@ function LegendDot({ color, label }) {
   )
 }
 
-function StatusChip({ label, chipBg, chipColor, chipBorder }) {
-  return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      height: 22, padding: '0 7px', borderRadius: 6,
-      background: chipBg, color: chipColor,
-      border: `1px solid ${chipBorder}`,
-      fontSize: 10, fontWeight: 800, letterSpacing: 0.2,
-      whiteSpace: 'nowrap',
-    }}>
-      {label}
-    </div>
-  )
-}
 
 function RuleChip({ label, color }) {
   return (
