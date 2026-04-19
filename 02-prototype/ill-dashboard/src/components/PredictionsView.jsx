@@ -83,6 +83,18 @@ export default function PredictionsView({ selectedWeek, data }) {
         )}
       </div>
 
+      {/* Strategy declarations table — shown when week has special mechanics */}
+      {(hasTD || hasCannibalise || hasDD || hasHT) && (
+        <StrategyTable
+          weekPredictions={weekPredictions}
+          players={players}
+          matches={matches}
+          cannibResolution={weekCannibResolution}
+          hasTD={hasTD}
+          hasCannibalise={hasCannibalise}
+        />
+      )}
+
       {/* Match cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {matches.map((match) => (
@@ -151,6 +163,110 @@ export default function PredictionsView({ selectedWeek, data }) {
         </div>
       )}
     </div>
+  )
+}
+
+function StrategyTable({ weekPredictions, players, matches, cannibResolution, hasTD, hasCannibalise }) {
+  const matchMap = {}
+  matches.forEach((m) => { matchMap[m.matchNum] = m })
+
+  const matchLabel = (num) => {
+    const m = matchMap[num]
+    return m ? `${m.home}·${m.away}` : `M${num}`
+  }
+
+  const rows = players.map((p) => {
+    const picks = weekPredictions[p.id] || {}
+    const td1 = picks._tripleDips?.[0]
+    const td2 = picks._tripleDips?.[1]
+    const cannib = picks._cannibalise
+    const cannibTarget = cannib ? players.find((pl) => pl.id === cannib.targetPlayerId)?.name : null
+    const dd = picks._doubleDip
+    const ht = picks._hateTeam
+
+    // cannibalisation received (resolved)
+    const receivedCannib = cannibResolution[p.id]
+    const cannibByNames = receivedCannib
+      ? (receivedCannib.by || []).map((bid) => players.find((pl) => pl.id === bid)?.name).filter(Boolean)
+      : []
+
+    return { p, td1, td2, cannibTarget, cannibMatch: cannib?.matchNum, dd, ht, cannibByNames, receivedMatch: receivedCannib?.matchNum }
+  }).filter((r) => r.td1 || r.td2 || r.cannibTarget || r.dd || r.ht)
+
+  if (rows.length === 0) return null
+
+  return (
+    <div style={{
+      marginBottom: 16, padding: '12px 14px',
+      background: 'var(--surface)', borderRadius: 14,
+      border: '1px solid rgba(255,255,255,0.05)',
+    }}>
+      {/* Header */}
+      <div style={{
+        fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
+        color: 'var(--text-secondary)', marginBottom: 10,
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <div style={{ width: 3, height: 12, borderRadius: 2, background: 'var(--gold)' }} />
+        Week Strategies
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {rows.map(({ p, td1, td2, cannibTarget, cannibMatch, dd, ht, cannibByNames, receivedMatch }) => (
+          <div key={p.id} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '6px 0',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+          }}>
+            <Avatar player={p} size={22} />
+            <span style={{ fontSize: 11, fontWeight: 700, minWidth: 64, color: 'var(--text)' }}>
+              {p.name}
+            </span>
+
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flex: 1 }}>
+              {td1 && (
+                <StratTag label={`TD1 ${matchLabel(td1)}`} color="#A78BFA" bg="rgba(124,58,237,0.12)" />
+              )}
+              {td2 && (
+                <StratTag label={`TD2 ${matchLabel(td2)}`} color="#818CF8" bg="rgba(99,102,241,0.12)" />
+              )}
+              {cannibTarget && (
+                <StratTag label={`💀 ${cannibTarget} · ${matchLabel(cannibMatch)}`} color="#FCA5A5" bg="rgba(239,68,68,0.1)" />
+              )}
+              {dd && (
+                <StratTag label={`DD ${matchLabel(dd)}`} color="#FCD34D" bg="rgba(180,83,9,0.12)" />
+              )}
+              {ht && (
+                <StratTag label={`HT ${ht}`} color="#94A3B8" bg="rgba(148,163,184,0.08)" />
+              )}
+            </div>
+
+            {/* If this player got cannibalised, show who by */}
+            {cannibByNames.length > 0 && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: '#FCA5A5',
+                background: 'rgba(239,68,68,0.1)', padding: '2px 6px', borderRadius: 4,
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}>
+                💀 by {cannibByNames.join(', ')} · {matchLabel(receivedMatch)}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function StratTag({ label, color, bg }) {
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 700, letterSpacing: 0.3,
+      padding: '2px 6px', borderRadius: 4,
+      color, background: bg, whiteSpace: 'nowrap',
+    }}>
+      {label}
+    </span>
   )
 }
 
