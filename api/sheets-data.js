@@ -130,6 +130,40 @@ export default async function handler(req, res) {
       teamAccuracy[player.id] = playerAcc;
     }
 
+    // ── Cannibalisation resolution per week (for Picks tab display) ──
+    // { [week]: { [targetPlayerId]: { matchNum, by: [cannibaliserPlayerId, ...] } } }
+    const cannibResolution = {};
+    for (const w of weeksWithMatches) {
+      const weekPreds = predictionsByWeek[w] || {};
+      const weekMatchNums = new Set(matchResults.filter((m) => m.week === w).map((m) => m.matchNum));
+
+      // Collect votes: who wants to cannibalise which match of whom
+      const votes = {}; // { targetPlayerId: { matchNum: [cannibaliserIds] } }
+      for (const player of PLAYERS) {
+        const c = (weekPreds[player.id] || {})._cannibalise;
+        if (!c || !weekMatchNums.has(c.matchNum)) continue;
+        if (!votes[c.targetPlayerId]) votes[c.targetPlayerId] = {};
+        if (!votes[c.targetPlayerId][c.matchNum]) votes[c.targetPlayerId][c.matchNum] = [];
+        votes[c.targetPlayerId][c.matchNum].push(player.id);
+      }
+
+      if (Object.keys(votes).length === 0) continue;
+      cannibResolution[w] = {};
+
+      for (const [targetIdStr, matchVotes] of Object.entries(votes)) {
+        const targetId = Number(targetIdStr);
+        const targetTripleDips = (weekPreds[targetId] || {})._tripleDips || [];
+        const maxVotes = Math.max(...Object.values(matchVotes).map((v) => v.length));
+        const tied = Object.entries(matchVotes)
+          .filter(([, v]) => v.length === maxVotes)
+          .map(([m, v]) => ({ matchNum: Number(m), voters: v }));
+        const tdTied = tied.filter(({ matchNum }) => targetTripleDips.includes(matchNum));
+        const pool = tdTied.length > 0 ? tdTied : tied;
+        const resolved = pool.slice().sort((a, b) => a.matchNum - b.matchNum)[0];
+        cannibResolution[w][targetId] = { matchNum: resolved.matchNum, by: resolved.voters };
+      }
+    }
+
     // ── Rank deltas since last completed match ──
     const playerLookup = {};
     PLAYERS.forEach((p) => { playerLookup[p.id] = p; });
@@ -196,6 +230,7 @@ export default async function handler(req, res) {
       rankDeltas,
       teamAccuracy,
       teamFormData,
+      cannibResolution,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err) {
