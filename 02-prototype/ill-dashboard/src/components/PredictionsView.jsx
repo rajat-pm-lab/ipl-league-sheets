@@ -9,9 +9,6 @@ export default function PredictionsView({ selectedWeek, data }) {
   const weekRules = (data?.weeklyRules || {})[selectedWeek] || {}
   const weekCannibResolution = (data?.cannibResolution || {})[selectedWeek] || {}
 
-  // Week is "complete" only when every match has a result — used to reveal cannibaliser names
-  const weekComplete = matches.length > 0 && matches.every((m) => m.winner !== undefined)
-
   // Detect which mechanics this week has
   const allPicks = Object.values(weekPredictions)
   const hasDD = allPicks.some((p) => p._doubleDip)
@@ -166,12 +163,17 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
 
   // Count how many players have this as their Double Dip match
   const doubleDipCount = players.filter((p) => (weekPredictions[p.id] || {})._doubleDip === match.matchNum).length
-  // Count triple dippers on this match
-  const tripleDipCount = players.filter((p) => (weekPredictions[p.id] || {})._tripleDips?.includes(match.matchNum)).length
-  // Players cannibalised on this match
-  const cannibalisedPlayerIds = Object.entries(cannibResolution)
+  // Count triple dippers on this match (TD1 vs TD2)
+  const td1Count = players.filter((p) => (weekPredictions[p.id] || {})._tripleDips?.[0] === match.matchNum).length
+  const td2Count = players.filter((p) => (weekPredictions[p.id] || {})._tripleDips?.[1] === match.matchNum).length
+  const tripleDipCount = td1Count + td2Count
+  // Players cannibalised on this match + their names
+  const cannibalisedEntries = Object.entries(cannibResolution)
     .filter(([, v]) => v.matchNum === match.matchNum)
-    .map(([pid]) => Number(pid))
+  const cannibalisedPlayerIds = cannibalisedEntries.map(([pid]) => Number(pid))
+  const cannibalisedNames = cannibalisedEntries
+    .map(([pid]) => players.find((pl) => pl.id === Number(pid))?.name)
+    .filter(Boolean)
 
   let correctCount = 0
   let totalPicks = 0
@@ -220,22 +222,31 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          {tripleDipCount > 0 && (
+          {td1Count > 0 && (
             <div style={{
               fontSize: 9, fontWeight: 800, color: '#E040FB',
               background: 'rgba(224,64,251,0.15)', padding: '2px 6px', borderRadius: 5,
               letterSpacing: 0.3,
             }}>
-              🚀×{tripleDipCount}
+              🚀TD1×{td1Count}
             </div>
           )}
-          {cannibalisedPlayerIds.length > 0 && (
+          {td2Count > 0 && (
+            <div style={{
+              fontSize: 9, fontWeight: 800, color: '#CE93D8',
+              background: 'rgba(206,147,216,0.15)', padding: '2px 6px', borderRadius: 5,
+              letterSpacing: 0.3,
+            }}>
+              🚀TD2×{td2Count}
+            </div>
+          )}
+          {cannibalisedNames.length > 0 && (
             <div style={{
               fontSize: 9, fontWeight: 800, color: '#FF4081',
               background: 'rgba(255,64,129,0.15)', padding: '2px 6px', borderRadius: 5,
               letterSpacing: 0.3,
             }}>
-              💀×{cannibalisedPlayerIds.length}
+              💀 {cannibalisedNames.join(', ')}
             </div>
           )}
           {doubleDipCount > 0 && (
@@ -276,7 +287,11 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
             const isHate = hateTeamPlaying && !isDD
             // Week 4 mechanics
             const isLate = (playerPicks._lateMatches || []).includes(match.matchNum)
-            const isTD = !isLate && playerPicks._tripleDips?.includes(match.matchNum)
+            const tripleDipSlot = !isLate && playerPicks._tripleDips
+              ? playerPicks._tripleDips.indexOf(match.matchNum)  // 0=TD1, 1=TD2, -1=not TD
+              : -1
+            const isTD = tripleDipSlot >= 0
+            const tdLabel = isTD ? `🚀 TD${tripleDipSlot + 1}` : null
             const isCannibalisedForMe = !isLate && cannibResolution[p.id]?.matchNum === match.matchNum
             const cannibalisedBy = isCannibalisedForMe
               ? (cannibResolution[p.id].by || []).map((bid) => players.find((pl) => pl.id === bid)?.name).filter(Boolean).join(', ')
@@ -297,15 +312,14 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
               bg = 'rgba(255,152,0,0.03)'; borderColor = 'rgba(255,152,0,0.1)'
               pts = '0'; ptsColor = 'rgba(255,255,255,0.3)'
             } else if (isCannibalisedForMe) {
-              // Cannibalised — 0 pts; reveal who did it only once the week is fully complete
-              const cannibLabel = weekComplete ? `💀 by ${cannibalisedBy}` : '💀 Cannibalised'
-              chip = <StatusChip label={cannibLabel} chipBg="rgba(255,64,129,0.15)" chipColor="#FF4081" chipBorder="rgba(255,64,129,0.3)" />
+              // Cannibalised — always 0 pts; always show who did it
+              chip = <StatusChip label={`💀 by ${cannibalisedBy}`} chipBg="rgba(255,64,129,0.15)" chipColor="#FF4081" chipBorder="rgba(255,64,129,0.3)" />
               bg = 'rgba(255,64,129,0.04)'; borderColor = 'rgba(255,64,129,0.15)'
               pts = '0'; ptsColor = 'rgba(255,255,255,0.3)'
             } else if (isPending) {
               // Upcoming match — show mechanic indicators, no outcome colouring
               if (isTD) {
-                chip = <StatusChip label="🚀 TD" chipBg="rgba(224,64,251,0.15)" chipColor="#E040FB" chipBorder="rgba(224,64,251,0.3)" />
+                chip = <StatusChip label={tdLabel} chipBg="rgba(224,64,251,0.15)" chipColor="#E040FB" chipBorder="rgba(224,64,251,0.3)" />
                 borderColor = 'rgba(224,64,251,0.12)'
               } else if (confidence !== undefined) {
                 chip = <StatusChip label={`×${confidence}`} chipBg="rgba(255,215,0,0.15)" chipColor="#FFD700" chipBorder="rgba(255,215,0,0.3)" />
@@ -325,8 +339,8 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
               // Triple Dip result
               const tdCorrect = pick === match.winner
               chip = tdCorrect
-                ? <StatusChip label="🚀 +30" chipBg="rgba(224,64,251,0.18)" chipColor="#E040FB" chipBorder="rgba(224,64,251,0.35)" />
-                : <StatusChip label="🚀 -20" chipBg="rgba(255,23,68,0.15)" chipColor="var(--red)" chipBorder="rgba(255,23,68,0.28)" />
+                ? <StatusChip label={`${tdLabel} +30`} chipBg="rgba(224,64,251,0.18)" chipColor="#E040FB" chipBorder="rgba(224,64,251,0.35)" />
+                : <StatusChip label={`${tdLabel} -20`} chipBg="rgba(255,23,68,0.15)" chipColor="var(--red)" chipBorder="rgba(255,23,68,0.28)" />
               bg = tdCorrect ? 'rgba(224,64,251,0.05)' : 'rgba(255,23,68,0.03)'
               borderColor = tdCorrect ? 'rgba(224,64,251,0.2)' : 'rgba(255,23,68,0.1)'
               pts = tdCorrect ? '+30' : (pick ? '-20' : null)
@@ -370,7 +384,7 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
                 background: bg, border: `1px solid ${borderColor}`,
               }}>
                 {/* Status chip — leftmost */}
-                <div style={{ width: 52, flexShrink: 0 }}>
+                <div style={{ minWidth: 44, flexShrink: 0 }}>
                   {chip}
                 </div>
                 {/* Avatar + name */}
