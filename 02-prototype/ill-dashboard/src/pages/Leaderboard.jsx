@@ -19,7 +19,7 @@ export default function Leaderboard() {
     if (data && !weekInitialized) {
       const cw = data.currentWeek || 1
       setSelectedWeek(cw)
-      setSelectedStage(cw <= 3 ? 'STAGE_1' : cw <= 6 ? 'STAGE_2' : 'STAGE_3')
+      setSelectedStage(cw <= 4 ? 'STAGE_1' : cw <= 7 ? 'STAGE_2' : 'STAGE_3')
       setWeekInitialized(true)
     }
   }, [data, weekInitialized])
@@ -52,7 +52,7 @@ export default function Leaderboard() {
     leaderboard = computeStageLeaderboard(weeklyData, allWeeks, players)
   }
 
-  const currentStageKey = selectedWeek <= 3 ? 'STAGE_1' : selectedWeek <= 6 ? 'STAGE_2' : 'STAGE_3'
+  const currentStageKey = selectedWeek <= 4 ? 'STAGE_1' : selectedWeek <= 7 ? 'STAGE_2' : 'STAGE_3'
   const currentStage = stages[currentStageKey]
 
   return (
