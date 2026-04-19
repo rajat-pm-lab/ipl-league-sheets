@@ -83,18 +83,6 @@ export default function PredictionsView({ selectedWeek, data }) {
         )}
       </div>
 
-      {/* Strategy declarations table — shown when week has special mechanics */}
-      {(hasTD || hasCannibalise || hasDD || hasHT) && (
-        <StrategyTable
-          weekPredictions={weekPredictions}
-          players={players}
-          matches={matches}
-          cannibResolution={weekCannibResolution}
-          hasTD={hasTD}
-          hasCannibalise={hasCannibalise}
-        />
-      )}
-
       {/* Match cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {matches.map((match) => (
@@ -108,6 +96,18 @@ export default function PredictionsView({ selectedWeek, data }) {
           />
         ))}
       </div>
+
+      {/* Strategy declarations table — shown when week has special mechanics */}
+      {(hasTD || hasCannibalise || hasDD || hasHT) && (
+        <StrategyTable
+          weekPredictions={weekPredictions}
+          players={players}
+          matches={matches}
+          cannibResolution={weekCannibResolution}
+          hasTD={hasTD}
+          hasCannibalise={hasCannibalise}
+        />
+      )}
 
       {/* Weekly picks summary per player — only show when matches have results */}
       {matches.some((m) => m.winner !== undefined) && (
