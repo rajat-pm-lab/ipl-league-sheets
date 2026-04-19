@@ -9,6 +9,9 @@ export default function PredictionsView({ selectedWeek, data }) {
   const weekRules = (data?.weeklyRules || {})[selectedWeek] || {}
   const weekCannibResolution = (data?.cannibResolution || {})[selectedWeek] || {}
 
+  // Week is "complete" only when every match has a result — used to reveal cannibaliser names
+  const weekComplete = matches.length > 0 && matches.every((m) => m.winner !== undefined)
+
   // Detect which mechanics this week has
   const allPicks = Object.values(weekPredictions)
   const hasDD = allPicks.some((p) => p._doubleDip)
@@ -272,8 +275,9 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
             const hateTeamPlaying = hateTeam && (match.home === hateTeam || match.away === hateTeam)
             const isHate = hateTeamPlaying && !isDD
             // Week 4 mechanics
-            const isTD = playerPicks._tripleDips?.includes(match.matchNum)
-            const isCannibalisedForMe = cannibResolution[p.id]?.matchNum === match.matchNum
+            const isLate = (playerPicks._lateMatches || []).includes(match.matchNum)
+            const isTD = !isLate && playerPicks._tripleDips?.includes(match.matchNum)
+            const isCannibalisedForMe = !isLate && cannibResolution[p.id]?.matchNum === match.matchNum
             const cannibalisedBy = isCannibalisedForMe
               ? (cannibResolution[p.id].by || []).map((bid) => players.find((pl) => pl.id === bid)?.name).filter(Boolean).join(', ')
               : null
@@ -287,9 +291,15 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
 
             const confidence = playerPicks._confidence?.[match.matchNum]
 
-            if (isCannibalisedForMe) {
-              // Cannibalised — always 0 pts, show who did it
-              chip = <StatusChip label={`💀 ${cannibalisedBy}`} chipBg="rgba(255,64,129,0.15)" chipColor="#FF4081" chipBorder="rgba(255,64,129,0.3)" />
+            if (isLate) {
+              // Late submission — no prediction counts, always 0
+              chip = <StatusChip label="⏰ Late" chipBg="rgba(255,152,0,0.12)" chipColor="#FF9800" chipBorder="rgba(255,152,0,0.25)" />
+              bg = 'rgba(255,152,0,0.03)'; borderColor = 'rgba(255,152,0,0.1)'
+              pts = '0'; ptsColor = 'rgba(255,255,255,0.3)'
+            } else if (isCannibalisedForMe) {
+              // Cannibalised — 0 pts; reveal who did it only once the week is fully complete
+              const cannibLabel = weekComplete ? `💀 by ${cannibalisedBy}` : '💀 Cannibalised'
+              chip = <StatusChip label={cannibLabel} chipBg="rgba(255,64,129,0.15)" chipColor="#FF4081" chipBorder="rgba(255,64,129,0.3)" />
               bg = 'rgba(255,64,129,0.04)'; borderColor = 'rgba(255,64,129,0.15)'
               pts = '0'; ptsColor = 'rgba(255,255,255,0.3)'
             } else if (isPending) {
