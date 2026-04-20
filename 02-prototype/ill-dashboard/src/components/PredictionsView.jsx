@@ -106,6 +106,8 @@ export default function PredictionsView({ selectedWeek, data }) {
           cannibResolution={weekCannibResolution}
           hasTD={hasTD}
           hasCannibalise={hasCannibalise}
+          hasDD={hasDD}
+          hasHT={hasHT}
         />
       )}
 
@@ -166,107 +168,204 @@ export default function PredictionsView({ selectedWeek, data }) {
   )
 }
 
-function StrategyTable({ weekPredictions, players, matches, cannibResolution, hasTD, hasCannibalise }) {
+function StrategyTable({ weekPredictions, players, matches, cannibResolution, hasTD, hasCannibalise, hasDD, hasHT }) {
   const matchMap = {}
   matches.forEach((m) => { matchMap[m.matchNum] = m })
 
   const matchLabel = (num) => {
+    if (!num) return '—'
     const m = matchMap[num]
-    return m ? `${m.home}·${m.away}` : `M${num}`
+    return m ? `${m.home} v ${m.away}` : `M${num}`
   }
 
   const rows = players.map((p) => {
     const picks = weekPredictions[p.id] || {}
-    const td1 = picks._tripleDips?.[0]
-    const td2 = picks._tripleDips?.[1]
+    const td1 = picks._tripleDips?.[0] ?? null
+    const td2 = picks._tripleDips?.[1] ?? null
     const cannib = picks._cannibalise
-    const cannibTarget = cannib ? players.find((pl) => pl.id === cannib.targetPlayerId)?.name : null
-    const dd = picks._doubleDip
-    const ht = picks._hateTeam
-
-    // cannibalisation received (resolved)
+    const cannibTarget = cannib ? players.find((pl) => pl.id === cannib.targetPlayerId) : null
+    const dd = picks._doubleDip ?? null
+    const ht = picks._hateTeam ?? null
     const receivedCannib = cannibResolution[p.id]
     const cannibByNames = receivedCannib
       ? (receivedCannib.by || []).map((bid) => players.find((pl) => pl.id === bid)?.name).filter(Boolean)
       : []
-
-    return { p, td1, td2, cannibTarget, cannibMatch: cannib?.matchNum, dd, ht, cannibByNames, receivedMatch: receivedCannib?.matchNum }
-  }).filter((r) => r.td1 || r.td2 || r.cannibTarget || r.dd || r.ht)
+    return {
+      p, td1, td2,
+      cannibTarget: cannibTarget?.name ?? null, cannibMatch: cannib?.matchNum ?? null,
+      dd, ht, cannibByNames, receivedMatch: receivedCannib?.matchNum ?? null,
+    }
+  }).filter((r) => r.td1 || r.td2 || r.cannibTarget || r.dd || r.ht || r.cannibByNames.length > 0)
 
   if (rows.length === 0) return null
 
+  // Column definitions
+  const isTDWeek = hasTD || hasCannibalise
+  const isDDWeek = (hasDD || hasHT) && !isTDWeek
+
+  const colStyle = {
+    fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase',
+    color: 'rgba(136,153,170,0.55)', padding: '0 4px 8px', textAlign: 'center',
+  }
+  const cellStyle = {
+    fontSize: 10, fontWeight: 700, textAlign: 'center',
+    padding: '7px 4px', borderTop: '1px solid rgba(255,255,255,0.04)',
+    color: 'var(--text)',
+  }
+
   return (
     <div style={{
-      marginBottom: 16, padding: '12px 14px',
+      marginBottom: 16, padding: '14px 12px',
       background: 'var(--surface)', borderRadius: 14,
       border: '1px solid rgba(255,255,255,0.05)',
     }}>
-      {/* Header */}
+      {/* Section title */}
       <div style={{
         fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
-        color: 'var(--text-secondary)', marginBottom: 10,
+        color: 'var(--text-secondary)', marginBottom: 14,
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <div style={{ width: 3, height: 12, borderRadius: 2, background: 'var(--gold)' }} />
         Week Strategies
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        {rows.map(({ p, td1, td2, cannibTarget, cannibMatch, dd, ht, cannibByNames, receivedMatch }) => (
-          <div key={p.id} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '6px 0',
-            borderBottom: '1px solid rgba(255,255,255,0.04)',
-          }}>
-            <Avatar player={p} size={22} />
-            <span style={{ fontSize: 11, fontWeight: 700, minWidth: 64, color: 'var(--text)' }}>
-              {p.name}
-            </span>
-
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flex: 1 }}>
-              {td1 && (
-                <StratTag label={`TD1 ${matchLabel(td1)}`} color="#A78BFA" bg="rgba(124,58,237,0.12)" />
-              )}
-              {td2 && (
-                <StratTag label={`TD2 ${matchLabel(td2)}`} color="#818CF8" bg="rgba(99,102,241,0.12)" />
-              )}
-              {cannibTarget && (
-                <StratTag label={`💀 ${cannibTarget} · ${matchLabel(cannibMatch)}`} color="#FCA5A5" bg="rgba(239,68,68,0.1)" />
-              )}
-              {dd && (
-                <StratTag label={`DD ${matchLabel(dd)}`} color="#FCD34D" bg="rgba(180,83,9,0.12)" />
-              )}
-              {ht && (
-                <StratTag label={`HT ${ht}`} color="#94A3B8" bg="rgba(148,163,184,0.08)" />
-              )}
-            </div>
-
-            {/* If this player got cannibalised, show who by */}
-            {cannibByNames.length > 0 && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: '#FCA5A5',
-                background: 'rgba(239,68,68,0.1)', padding: '2px 6px', borderRadius: 4,
-                whiteSpace: 'nowrap', flexShrink: 0,
-              }}>
-                💀 by {cannibByNames.join(', ')} · {matchLabel(receivedMatch)}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
+      {isTDWeek ? (
+        // ── Week 4 table: Player | TD1 | TD2 | Targets | Cannibalised By ──
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '22%' }} />
+              <col style={{ width: '19%' }} />
+              <col style={{ width: '19%' }} />
+              <col style={{ width: '20%' }} />
+              <col style={{ width: '20%' }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th style={{ ...colStyle, textAlign: 'left', paddingLeft: 2 }}>Player</th>
+                <th style={{ ...colStyle, color: '#A78BFA' }}>🚀 TD1</th>
+                <th style={{ ...colStyle, color: '#818CF8' }}>🚀 TD2</th>
+                <th style={{ ...colStyle, color: '#FCA5A5' }}>💀 Targets</th>
+                <th style={{ ...colStyle, color: '#FF4081' }}>💀 By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ p, td1, td2, cannibTarget, cannibMatch, cannibByNames, receivedMatch }) => (
+                <tr key={p.id}>
+                  {/* Player */}
+                  <td style={{ ...cellStyle, textAlign: 'left', paddingLeft: 2 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Avatar player={p} size={20} />
+                      <span style={{ fontSize: 11, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.name}
+                      </span>
+                    </div>
+                  </td>
+                  {/* TD1 */}
+                  <td style={{ ...cellStyle }}>
+                    {td1 ? (
+                      <span style={{
+                        display: 'inline-block', fontSize: 9, fontWeight: 700, lineHeight: 1.4,
+                        color: '#A78BFA', background: 'rgba(124,58,237,0.13)',
+                        padding: '3px 6px', borderRadius: 5,
+                      }}>{matchLabel(td1)}</span>
+                    ) : <span style={{ color: 'rgba(255,255,255,0.15)' }}>—</span>}
+                  </td>
+                  {/* TD2 */}
+                  <td style={{ ...cellStyle }}>
+                    {td2 ? (
+                      <span style={{
+                        display: 'inline-block', fontSize: 9, fontWeight: 700, lineHeight: 1.4,
+                        color: '#818CF8', background: 'rgba(99,102,241,0.13)',
+                        padding: '3px 6px', borderRadius: 5,
+                      }}>{matchLabel(td2)}</span>
+                    ) : <span style={{ color: 'rgba(255,255,255,0.15)' }}>—</span>}
+                  </td>
+                  {/* Targets */}
+                  <td style={{ ...cellStyle }}>
+                    {cannibTarget ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <span style={{
+                          fontSize: 10, fontWeight: 800, color: '#FCA5A5',
+                        }}>{cannibTarget}</span>
+                        <span style={{
+                          fontSize: 8, fontWeight: 600, color: 'rgba(252,165,165,0.6)',
+                          background: 'rgba(239,68,68,0.1)', padding: '1px 5px', borderRadius: 3,
+                          lineHeight: 1.5,
+                        }}>{matchLabel(cannibMatch)}</span>
+                      </div>
+                    ) : <span style={{ color: 'rgba(255,255,255,0.15)' }}>—</span>}
+                  </td>
+                  {/* Cannibalised By */}
+                  <td style={{ ...cellStyle }}>
+                    {cannibByNames.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <span style={{
+                          fontSize: 10, fontWeight: 800, color: '#FF4081',
+                        }}>{cannibByNames.join(', ')}</span>
+                        <span style={{
+                          fontSize: 8, fontWeight: 600, color: 'rgba(255,64,129,0.6)',
+                          background: 'rgba(255,64,129,0.1)', padding: '1px 5px', borderRadius: 3,
+                          lineHeight: 1.5,
+                        }}>{matchLabel(receivedMatch)}</span>
+                      </div>
+                    ) : <span style={{ color: 'rgba(255,255,255,0.15)' }}>—</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : isDDWeek ? (
+        // ── Week 2 table: Player | DD Match | Hate Team ──
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '35%' }} />
+            <col style={{ width: '35%' }} />
+            <col style={{ width: '30%' }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th style={{ ...colStyle, textAlign: 'left', paddingLeft: 2 }}>Player</th>
+              <th style={{ ...colStyle, color: '#FCD34D' }}>🎯 Double Dip</th>
+              <th style={{ ...colStyle, color: '#94A3B8' }}>💀 Hate Team</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ p, dd, ht }) => (
+              <tr key={p.id}>
+                <td style={{ ...cellStyle, textAlign: 'left', paddingLeft: 2 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Avatar player={p} size={20} />
+                    <span style={{ fontSize: 11, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {p.name}
+                    </span>
+                  </div>
+                </td>
+                <td style={{ ...cellStyle }}>
+                  {dd ? (
+                    <span style={{
+                      display: 'inline-block', fontSize: 9, fontWeight: 700, lineHeight: 1.4,
+                      color: '#FCD34D', background: 'rgba(180,83,9,0.14)',
+                      padding: '3px 6px', borderRadius: 5,
+                    }}>{matchLabel(dd)}</span>
+                  ) : <span style={{ color: 'rgba(255,255,255,0.15)' }}>—</span>}
+                </td>
+                <td style={{ ...cellStyle }}>
+                  {ht ? (
+                    <span style={{
+                      display: 'inline-block', fontSize: 10, fontWeight: 800,
+                      color: '#94A3B8', background: 'rgba(148,163,184,0.1)',
+                      padding: '3px 8px', borderRadius: 5,
+                    }}>{ht}</span>
+                  ) : <span style={{ color: 'rgba(255,255,255,0.15)' }}>—</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
     </div>
-  )
-}
-
-function StratTag({ label, color, bg }) {
-  return (
-    <span style={{
-      fontSize: 9, fontWeight: 700, letterSpacing: 0.3,
-      padding: '2px 6px', borderRadius: 4,
-      color, background: bg, whiteSpace: 'nowrap',
-    }}>
-      {label}
-    </span>
   )
 }
 
