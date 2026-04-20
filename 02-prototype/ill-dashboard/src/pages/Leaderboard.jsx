@@ -111,12 +111,14 @@ export default function Leaderboard() {
         </span>
       </div>
 
-      {/* Octopus Paul Prediction */}
+      {/* Octopus Paul Prediction — always anchored to the live/current week */}
       <OctopusPaul
         weeklyData={weeklyData}
         players={players}
-        selectedWeek={selectedWeek}
-        weekMatches={weekMatches}
+        selectedWeek={data.currentWeek || 1}
+        weekMatches={data?.matchSchedule?.[data.currentWeek || 1] || []}
+        allPredictions={data.allPredictions}
+        cannibResolution={data.cannibResolution}
       />
 
       {/* Tabs */}

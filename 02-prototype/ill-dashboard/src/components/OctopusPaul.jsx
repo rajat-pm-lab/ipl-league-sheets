@@ -2,14 +2,20 @@ import Avatar from './Avatar'
 
 // ── Paul's projection algorithm ───────────────────────────────
 // Projected final week score = current week pts already earned
-//   + (remaining matches × player's historical win rate × 10pts per win)
+//   + expected pts from remaining matches (accounting for Triple Dip and Cannibalisation)
+//
+// Per remaining match, per player:
+//   - Cannibalised match     → 0 pts expected (forced 0)
+//   - Triple Dip match       → winRate×30 − (1−winRate)×20  (EV of +30/−20)
+//   - BAU match              → winRate×10  (no penalty for wrong)
+//
 // Historical win rate = career wins / career played (across all past weeks)
-function projectWeekFinal(weeklyData, players, selectedWeek, weekMatches) {
-  const completedMatches = weekMatches.filter((m) => m.winner !== undefined).length
-  const remainingMatches = weekMatches.length - completedMatches
+function projectWeekFinal(weeklyData, players, selectedWeek, weekMatches, allPredictions, cannibResolution) {
+  const remainingWeekMatches = weekMatches.filter((m) => m.winner === undefined)
+  const completedMatches = weekMatches.length - remainingWeekMatches.length
 
   const scored = players.map((p) => {
-    // Points already locked in this week
+    // Points already locked in this week (scoring engine handles TD/cannib for completed matches)
     const thisWeekRow = (weeklyData[selectedWeek] || []).find((r) => r.playerId === p.id)
     const currentPts = thisWeekRow?.points ?? 0
 
@@ -17,7 +23,7 @@ function projectWeekFinal(weeklyData, players, selectedWeek, weekMatches) {
     let totalWins = 0
     let totalPlayed = 0
     Object.entries(weeklyData).forEach(([w, rows]) => {
-      if (Number(w) === selectedWeek) return // exclude current week
+      if (Number(w) === selectedWeek) return
       const row = (rows || []).find((r) => r.playerId === p.id)
       if (row) {
         totalWins += row.wins ?? 0
@@ -26,11 +32,29 @@ function projectWeekFinal(weeklyData, players, selectedWeek, weekMatches) {
     })
     const winRate = totalPlayed > 0 ? totalWins / totalPlayed : 0.45 // fallback: 45% if no history
 
-    // Project: remaining matches × win rate × 10pts per correct pick
-    const expectedAdditional = remainingMatches * winRate * 10
+    // Per-player week mechanics (triple dip + cannibalisation)
+    const playerPicks = (allPredictions?.[selectedWeek] || {})[p.id] || {}
+    const tripleDips = playerPicks._tripleDips || []
+    const cannibMatchNum = cannibResolution?.[selectedWeek]?.[p.id]?.matchNum ?? null
+
+    // Project remaining matches with mechanics-aware EV
+    let expectedAdditional = 0
+    for (const m of remainingWeekMatches) {
+      if (m.matchNum === cannibMatchNum) {
+        // Cannibalised: forced 0
+        continue
+      } else if (tripleDips.includes(m.matchNum)) {
+        // Triple Dip: +30 correct, -20 wrong → EV = winRate×50 − 20
+        expectedAdditional += winRate * 50 - 20
+      } else {
+        // BAU: +10 correct, 0 wrong
+        expectedAdditional += winRate * 10
+      }
+    }
+
     const projectedPts = currentPts + expectedAdditional
 
-    return { player: p, projectedPts, currentPts, winRate, remainingMatches }
+    return { player: p, projectedPts, currentPts, winRate, remainingMatches: remainingWeekMatches.length }
   })
 
   scored.sort((a, b) => b.projectedPts - a.projectedPts)
@@ -39,7 +63,7 @@ function projectWeekFinal(weeklyData, players, selectedWeek, weekMatches) {
     second: scored[1],
     lappa: scored[scored.length - 1],
     completedMatches,
-    remainingMatches,
+    remainingMatches: remainingWeekMatches.length,
     totalMatches: weekMatches.length,
   }
 }
@@ -106,7 +130,7 @@ function PredCard({ label, emoji, player, projectedPts, accentColor }) {
 }
 
 // ── Main export ──────────────────────────────────────────────
-export default function OctopusPaul({ weeklyData, players, selectedWeek, weekMatches }) {
+export default function OctopusPaul({ weeklyData, players, selectedWeek, weekMatches, allPredictions, cannibResolution }) {
   if (!weeklyData || !players?.length || !weekMatches?.length) return null
 
   // Don't show if week hasn't started yet (no results at all)
@@ -115,7 +139,7 @@ export default function OctopusPaul({ weeklyData, players, selectedWeek, weekMat
 
   let prediction
   try {
-    prediction = projectWeekFinal(weeklyData, players, selectedWeek, weekMatches)
+    prediction = projectWeekFinal(weeklyData, players, selectedWeek, weekMatches, allPredictions, cannibResolution)
   } catch {
     return null
   }
@@ -137,12 +161,12 @@ export default function OctopusPaul({ weeklyData, players, selectedWeek, weekMat
         <PaulSVG size={52} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 0.5, color: '#6FB8FF' }}>
-            🔮 Paul's Week {selectedWeek} Prediction
+            🔮 Paul's Week {selectedWeek} Winner Prediction
           </div>
           <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 2 }}>
             {weekDone
               ? 'Final standings — week complete'
-              : `${completedMatches}/${totalMatches} matches done · ${remainingMatches} remaining`}
+              : `Updates after every match · ${completedMatches}/${totalMatches} done`}
           </div>
           {/* Progress bar */}
           <div style={{
