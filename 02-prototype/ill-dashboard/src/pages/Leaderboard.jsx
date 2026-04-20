@@ -115,7 +115,8 @@ export default function Leaderboard() {
       <OctopusPaul
         weeklyData={weeklyData}
         players={players}
-        currentWeek={data.currentWeek || 1}
+        selectedWeek={selectedWeek}
+        weekMatches={weekMatches}
       />
 
       {/* Tabs */}
