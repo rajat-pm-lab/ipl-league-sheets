@@ -3,6 +3,7 @@ import { useLeagueData } from '../data/DataContext'
 
 import LeaderboardTable from '../components/LeaderboardTable'
 import PredictionsView from '../components/PredictionsView'
+import OctopusPaul from '../components/OctopusPaul'
 import Certificates from './Certificates'
 
 const TABS = ['Weekly', 'Stage', 'Overall', 'Picks', 'Awards']
@@ -110,9 +111,16 @@ export default function Leaderboard() {
         </span>
       </div>
 
+      {/* Octopus Paul Prediction */}
+      <OctopusPaul
+        weeklyData={weeklyData}
+        players={players}
+        currentWeek={data.currentWeek || 1}
+      />
+
       {/* Tabs */}
       <div style={{
-        display: 'flex', padding: '0 12px', marginTop: 20,
+        display: 'flex', padding: '0 12px', marginTop: 12,
         borderBottom: '1px solid rgba(255,255,255,0.06)',
       }}>
         {TABS.map((tab) => (
