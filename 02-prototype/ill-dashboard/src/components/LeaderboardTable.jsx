@@ -14,7 +14,10 @@ const gridCols = '36px 28px 1fr 26px 26px 22px 22px 22px 44px 14px'
 
 export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', weekComplete = false, rankDeltas = {} }) {
   const navigate = useNavigate()
-  const maxPts = Math.max(...leaderboard.map((r) => r.points), 1)
+  const allPts = leaderboard.map((r) => r.points)
+  const maxPts = Math.max(...allPts, 1)
+  const minPts = Math.min(...allPts, 0)
+  const ptRange = maxPts - minPts || 1
 
   return (
     <div style={{ padding: '0 8px' }}>
@@ -144,18 +147,29 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', we
             <div style={{ fontSize: 11, fontWeight: 600, textAlign: 'center', color: 'var(--grey)', fontVariantNumeric: 'tabular-nums' }}>{row.draws}</div>
 
             {/* Points with bar */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-              <span style={{ fontSize: 14, fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>{row.points}</span>
-              <div style={{ width: '100%', height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', borderRadius: 2, transition: 'width 0.5s',
-                  width: `${(row.points / maxPts) * 100}%`,
-                  background: isLast
-                    ? 'linear-gradient(90deg, var(--red), var(--orange))'
-                    : 'linear-gradient(90deg, var(--blue), var(--gold))',
-                }} />
-              </div>
-            </div>
+            {(() => {
+              const barPct = Math.max(0, Math.min(100, ((row.points - minPts) / ptRange) * 100))
+              const isNegative = row.points < 0
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                  <span style={{
+                    fontSize: 14, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
+                    color: isNegative ? 'var(--red)' : undefined,
+                  }}>{row.points}</span>
+                  <div style={{ width: '100%', height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%', borderRadius: 2, transition: 'width 0.5s',
+                      width: `${barPct}%`,
+                      background: isNegative
+                        ? 'linear-gradient(90deg, var(--red), var(--orange))'
+                        : isLast
+                          ? 'linear-gradient(90deg, var(--red), var(--orange))'
+                          : 'linear-gradient(90deg, var(--blue), var(--gold))',
+                    }} />
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Profile chevron */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)' }}>
