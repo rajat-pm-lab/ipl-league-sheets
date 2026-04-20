@@ -437,42 +437,6 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          {td1Count > 0 && (
-            <div style={{
-              fontSize: 9, fontWeight: 800, color: '#E040FB',
-              background: 'rgba(224,64,251,0.15)', padding: '2px 6px', borderRadius: 5,
-              letterSpacing: 0.3,
-            }}>
-              🚀TD1×{td1Count}
-            </div>
-          )}
-          {td2Count > 0 && (
-            <div style={{
-              fontSize: 9, fontWeight: 800, color: '#CE93D8',
-              background: 'rgba(206,147,216,0.15)', padding: '2px 6px', borderRadius: 5,
-              letterSpacing: 0.3,
-            }}>
-              🚀TD2×{td2Count}
-            </div>
-          )}
-          {cannibalisedNames.length > 0 && (
-            <div style={{
-              fontSize: 9, fontWeight: 800, color: '#FF4081',
-              background: 'rgba(255,64,129,0.15)', padding: '2px 6px', borderRadius: 5,
-              letterSpacing: 0.3,
-            }}>
-              💀 {cannibalisedNames.join(', ')}
-            </div>
-          )}
-          {doubleDipCount > 0 && (
-            <div style={{
-              fontSize: 9, fontWeight: 800, color: '#FF9800',
-              background: 'rgba(255,152,0,0.15)', padding: '2px 6px', borderRadius: 5,
-              letterSpacing: 0.3,
-            }}>
-              🎯×{doubleDipCount}
-            </div>
-          )}
           {!isPending && !isNoResult && (
             <div style={{
               fontSize: 10, fontWeight: 800, color: 'var(--green)',
