@@ -1,68 +1,151 @@
 import Avatar from './Avatar'
 
 // ── Paul's projection algorithm ───────────────────────────────
-// Projected final week score = current week pts already earned
-//   + expected pts from remaining matches (accounting for Triple Dip and Cannibalisation)
 //
-// Per remaining match, per player:
-//   - Cannibalised match     → 0 pts expected (forced 0)
-//   - Triple Dip match       → winRate×30 − (1−winRate)×20  (EV of +30/−20)
-//   - BAU match              → winRate×10  (no penalty for wrong)
+// A 5-factor weighted model that scores each player and ranks them
+// to predict Week N winner, runner-up, and lappa.
 //
-// Historical win rate = career wins / career played (across all past weeks)
+// FINAL PAUL SCORE (0–1 scale):
+//   0.40 × N(ExpectedRemainingPts)   ← future week projection
+//   0.20 × N(CurrentWeekPts)         ← points earned so far this week
+//   0.20 × N(RankScore, week-1)      ← most recent prior week standing
+//   0.15 × N(RankScore, week-2)      ← 2nd most recent prior week
+//   0.05 × N(RankScore, week-3)      ← 3rd most recent prior week
+//
+// N(x) = min-max normalisation across all players for that factor.
+// RankScore(rank) = numPlayers − rank + 1  (rank 1 → highest score)
+//
+// ── FACTOR 1: ExpectedRemainingPts ─────────────────────────────
+// For each remaining (unplayed) match:
+//   - Cannibalised match  → 0 pts   (checked FIRST, overrides everything)
+//   - Triple Dip match    → blendedRate × 50 − 20   (EV of +30/−20)
+//   - BAU match           → blendedRate × 10         (EV of +10/0)
+//
+// blendedRate = Bayesian blend of Week N form + career rate
+//   = (w4Wins + careerRate × 5) / (w4Played + 5)
+//   Prior weight of 5 pseudo-matches prevents small-sample overfit.
+//   Falls back to careerRate (weeks 1..N-1) if no picks yet this week.
+//   Absolute fallback: 0.45 if no history at all.
+//
+// Triple Dip breakeven: blendedRate = 40% (EV = 0 at exactly 40%)
+// Below 40% → TD hurts vs BAU. Above 40% → TD pays off.
+//
+// ── CANNIBALISATION PRIORITY ────────────────────────────────────
+// Cannibalised check always runs before TD check.
+// So a cannibalised TD match = 0 pts, not TD EV.
+// cannibResolution[week][playerId].matchNum = the single resolved match.
+//
+// ── AUTO-UPDATES ────────────────────────────────────────────────
+// Paul re-runs on every page load (Vercel 60s cache).
+// Punch winner into Google Sheet → Paul updates within ~1 min.
+
+function normalize(values) {
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  if (max === min) return values.map(() => 0.5)
+  return values.map((v) => (v - min) / (max - min))
+}
+
 function projectWeekFinal(weeklyData, players, selectedWeek, weekMatches, allPredictions, cannibResolution) {
   const remainingWeekMatches = weekMatches.filter((m) => m.winner === undefined)
-  const completedMatches = weekMatches.length - remainingWeekMatches.length
+  const completedWeekMatches = weekMatches.filter((m) => m.winner !== undefined)
+  const completedCount = completedWeekMatches.length
 
-  const scored = players.map((p) => {
-    // Points already locked in this week (scoring engine handles TD/cannib for completed matches)
-    const thisWeekRow = (weeklyData[selectedWeek] || []).find((r) => r.playerId === p.id)
-    const currentPts = thisWeekRow?.points ?? 0
-
-    // Historical accuracy across all weeks (excluding current — still in progress)
-    let totalWins = 0
-    let totalPlayed = 0
-    Object.entries(weeklyData).forEach(([w, rows]) => {
-      if (Number(w) === selectedWeek) return
-      const row = (rows || []).find((r) => r.playerId === p.id)
-      if (row) {
-        totalWins += row.wins ?? 0
-        totalPlayed += row.played ?? 0
-      }
-    })
-    const winRate = totalPlayed > 0 ? totalWins / totalPlayed : 0.45 // fallback: 45% if no history
-
-    // Per-player week mechanics (triple dip + cannibalisation)
-    const playerPicks = (allPredictions?.[selectedWeek] || {})[p.id] || {}
-    const tripleDips = playerPicks._tripleDips || []
+  // ── Per-player raw factor values ────────────────────────────
+  const playerData = players.map((p) => {
+    const pp = (allPredictions?.[selectedWeek] || {})[p.id] || {}
+    const tripleDips = pp._tripleDips || []
     const cannibMatchNum = cannibResolution?.[selectedWeek]?.[p.id]?.matchNum ?? null
 
-    // Project remaining matches with mechanics-aware EV
-    let expectedAdditional = 0
+    // Career win rate: all weeks BEFORE selectedWeek
+    let careerWins = 0, careerPlayed = 0
+    Object.entries(weeklyData).forEach(([w, rows]) => {
+      if (Number(w) >= selectedWeek) return
+      const row = (rows || []).find((r) => r.playerId === p.id)
+      if (row) { careerWins += row.wins ?? 0; careerPlayed += row.played ?? 0 }
+    })
+    const careerRate = careerPlayed > 0 ? careerWins / careerPlayed : 0.45
+
+    // Current-week raw pick accuracy (for Bayesian blend)
+    let wkWins = 0, wkPlayed = 0
+    for (const m of completedWeekMatches) {
+      const pick = pp[m.matchNum]
+      if (!pick) continue
+      wkPlayed++
+      if (pick === m.winner) wkWins++
+    }
+
+    // Bayesian blend: prior weight = 5 pseudo-matches at career rate
+    const blendedRate = (wkWins + careerRate * 5) / (wkPlayed + 5)
+
+    // Factor 1: expected pts from remaining matches
+    let expectedRemaining = 0
     for (const m of remainingWeekMatches) {
       if (m.matchNum === cannibMatchNum) {
-        // Cannibalised: forced 0
-        continue
+        // cannibalised — forced 0, even if it's a TD
       } else if (tripleDips.includes(m.matchNum)) {
-        // Triple Dip: +30 correct, -20 wrong → EV = winRate×50 − 20
-        expectedAdditional += winRate * 50 - 20
+        expectedRemaining += blendedRate * 50 - 20  // EV of +30/−20
       } else {
-        // BAU: +10 correct, 0 wrong
-        expectedAdditional += winRate * 10
+        expectedRemaining += blendedRate * 10        // EV of +10/0
       }
     }
 
-    const projectedPts = currentPts + expectedAdditional
+    // Factor 2: points already earned this week
+    const wkRow = (weeklyData[selectedWeek] || []).find((r) => r.playerId === p.id)
+    const currentWeekPts = wkRow?.points ?? 0
 
-    return { player: p, projectedPts, currentPts, winRate, remainingMatches: remainingWeekMatches.length }
+    return { p, blendedRate, expectedRemaining, currentWeekPts }
   })
 
-  scored.sort((a, b) => b.projectedPts - a.projectedPts)
+  // ── Prior-week rank scores ──────────────────────────────────
+  // Get up to 3 most recent weeks before selectedWeek
+  const priorWeeks = Object.keys(weeklyData)
+    .map(Number)
+    .filter((w) => w < selectedWeek)
+    .sort((a, b) => b - a)   // descending: most recent first
+    .slice(0, 3)
+
+  // Weights: most recent → 20%, 2nd → 15%, 3rd → 5%
+  const priorWeights = [0.20, 0.15, 0.05]
+
+  // For each prior week, compute rank scores (numPlayers − rank + 1)
+  const priorRankScores = priorWeeks.map((w) => {
+    const rows = [...(weeklyData[w] || [])].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
+    const scoreMap = {}
+    let rank = 1
+    for (let i = 0; i < rows.length; i++) {
+      if (i > 0 && rows[i].points !== rows[i - 1].points) rank = i + 1
+      scoreMap[rows[i].playerId] = players.length - rank + 1
+    }
+    return scoreMap
+  })
+
+  // ── Normalise all factors ───────────────────────────────────
+  const f1N = normalize(playerData.map((d) => d.expectedRemaining))
+  const f2N = normalize(playerData.map((d) => d.currentWeekPts))
+  const priorN = priorRankScores.map((scoreMap) =>
+    normalize(playerData.map((d) => scoreMap[d.p.id] ?? 0))
+  )
+
+  // ── Compute Paul scores ─────────────────────────────────────
+  const scored = playerData.map((d, i) => {
+    let paulScore = 0.40 * f1N[i] + 0.20 * f2N[i]
+    for (let k = 0; k < priorWeeks.length; k++) {
+      paulScore += priorWeights[k] * (priorN[k]?.[i] ?? 0)
+    }
+    return {
+      player: d.p,
+      paulScore,
+      projectedPts: d.currentWeekPts + d.expectedRemaining,  // for display only
+    }
+  })
+
+  scored.sort((a, b) => b.paulScore - a.paulScore)
   return {
     first: scored[0],
     second: scored[1],
     lappa: scored[scored.length - 1],
-    completedMatches,
+    completedMatches: completedCount,
     remainingMatches: remainingWeekMatches.length,
     totalMatches: weekMatches.length,
   }
