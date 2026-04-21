@@ -129,6 +129,8 @@ function projectWeekFinal(weeklyData, players, selectedWeek, weekMatches, allPre
   )
 
   // ── Compute Paul scores ─────────────────────────────────────
+  // paulScore (0–1) is a weighted blend used for tiebreaking.
+  // Primary ranking is by projectedPts (the number displayed to users).
   const scored = playerData.map((d, i) => {
     let paulScore = 0.40 * f1N[i] + 0.20 * f2N[i]
     for (let k = 0; k < priorWeeks.length; k++) {
@@ -137,11 +139,12 @@ function projectWeekFinal(weeklyData, players, selectedWeek, weekMatches, allPre
     return {
       player: d.p,
       paulScore,
-      projectedPts: d.currentWeekPts + d.expectedRemaining,  // for display only
+      projectedPts: d.currentWeekPts + d.expectedRemaining,
     }
   })
 
-  scored.sort((a, b) => b.paulScore - a.paulScore)
+  // Rank by projected pts (matches displayed value); paulScore breaks ties
+  scored.sort((a, b) => b.projectedPts - a.projectedPts || b.paulScore - a.paulScore)
   return {
     first: scored[0],
     second: scored[1],
