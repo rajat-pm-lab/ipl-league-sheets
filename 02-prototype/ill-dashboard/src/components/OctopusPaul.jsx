@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Avatar from './Avatar'
 
 // ── Paul's projection algorithm ───────────────────────────────
@@ -212,8 +213,91 @@ function PredCard({ label, emoji, player, projectedPts, accentColor }) {
   )
 }
 
+// ── Algorithm explainer ───────────────────────────────────────
+const FACTORS = [
+  {
+    pct: '40%', color: '#6FB8FF', barWidth: '100%',
+    name: 'Future matches',
+    desc: 'Expected pts from remaining games — Triple Dips score +30/−20, cannibalised matches score 0',
+  },
+  {
+    pct: '20%', color: '#5AABF5', barWidth: '50%',
+    name: 'This week so far',
+    desc: 'Points already locked in from completed matches this week',
+  },
+  {
+    pct: '20%', color: '#4F9FE8', barWidth: '50%',
+    name: 'Last week',
+    desc: 'How you finished last week — recent form matters most',
+  },
+  {
+    pct: '15%', color: '#7AB8EE', barWidth: '37.5%',
+    name: '2 weeks ago',
+    desc: 'Your standing from 2 weeks back',
+  },
+  {
+    pct: '5%', color: '#9BBFDA', barWidth: '12.5%',
+    name: '3 weeks ago',
+    desc: 'Your earliest week standing — a distant echo',
+  },
+]
+
+function AlgorithmExplainer() {
+  return (
+    <div style={{
+      marginTop: 10,
+      paddingTop: 12,
+      borderTop: '1px solid rgba(61,142,224,0.15)',
+    }}>
+      <div style={{
+        fontSize: 9, fontWeight: 800, letterSpacing: 1.8,
+        textTransform: 'uppercase', color: '#6FB8FF',
+        opacity: 0.85, marginBottom: 12,
+      }}>
+        Paul's 5-Factor Model
+      </div>
+
+      {FACTORS.map((f) => (
+        <div key={f.name} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 11 }}>
+          {/* % pill */}
+          <div style={{
+            minWidth: 34, padding: '3px 6px', borderRadius: 6,
+            fontSize: 10, fontWeight: 900, textAlign: 'center',
+            flexShrink: 0, marginTop: 1,
+            background: `${f.color}22`, color: f.color,
+          }}>
+            {f.pct}
+          </div>
+          {/* Content */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{f.name}</div>
+            <div style={{ fontSize: 9, fontWeight: 500, color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: 5 }}>{f.desc}</div>
+            <div style={{ height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: f.barWidth, background: `linear-gradient(90deg, #3D8EE0, ${f.color})`, borderRadius: 2 }} />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Insight note */}
+      <div style={{
+        marginTop: 14, padding: '8px 10px',
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 8,
+        fontSize: 9, fontWeight: 600,
+        color: 'var(--text-secondary)', lineHeight: 1.5,
+      }}>
+        💡 <span style={{ color: 'rgba(255,200,80,0.85)', fontWeight: 700 }}>Triple Dip tip:</span> You need &gt;40% prediction accuracy for a Triple Dip to help vs a normal pick. Below that, it actually hurts.
+      </div>
+    </div>
+  )
+}
+
 // ── Main export ──────────────────────────────────────────────
 export default function OctopusPaul({ weeklyData, players, selectedWeek, weekMatches, allPredictions, cannibResolution }) {
+  const [showExplainer, setShowExplainer] = useState(false)
+
   if (!weeklyData || !players?.length || !weekMatches?.length) return null
 
   // Don't show if week hasn't started yet (no results at all)
@@ -299,6 +383,27 @@ export default function OctopusPaul({ weeklyData, players, selectedWeek, weekMat
           ? 'Paul called it. Or didn\'t. Either way, blame the octopus.'
           : 'Projection updates after every match. Paul is an octopus. Blame him, not us.'}
       </div>
+
+      {/* Explainer toggle */}
+      <div
+        onClick={() => setShowExplainer((v) => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+          marginTop: 10, paddingTop: 10,
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          cursor: 'pointer',
+        }}
+      >
+        <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.3 }}>
+          {showExplainer ? 'Got it' : 'How does Paul predict?'}
+        </span>
+        <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)' }}>
+          {showExplainer ? '▴' : '▾'}
+        </span>
+      </div>
+
+      {/* Explainer panel */}
+      {showExplainer && <AlgorithmExplainer />}
     </div>
   )
 }
