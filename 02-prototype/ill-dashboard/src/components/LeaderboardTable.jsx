@@ -61,6 +61,7 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', we
         const isLast = row.rank === leaderboard.length
 
         let rowStyle = {
+          position: 'relative',
           display: 'grid', gridTemplateColumns: gridCols,
           gap: 3, alignItems: 'center', padding: '9px 8px',
           borderRadius: 10, marginBottom: 3, cursor: 'pointer',
@@ -85,8 +86,24 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', we
             style={rowStyle}
             onClick={() => navigate(`/player/${row.playerId}`)}
           >
+            {/* Winner's golden stream — flows down from rank 1 */}
+            {!isFirst && (
+              <div style={{
+                position: 'absolute', left: 17, top: -3, bottom: 0,
+                width: 0, borderLeft: '2px dashed rgba(255,215,0,0.12)',
+                pointerEvents: 'none', zIndex: 0,
+              }} />
+            )}
+            {/* Droplet at the very last row */}
+            {isLast && (
+              <div style={{
+                position: 'absolute', left: 12, bottom: -2,
+                fontSize: 8, opacity: 0.2, pointerEvents: 'none', zIndex: 0,
+              }}>💧</div>
+            )}
+
             {/* Rank */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
               <div style={{
                 fontSize: rankIcons[row.rank] ? 14 : 12, fontWeight: 800,
                 color: rankColors[row.rank] || 'var(--text-secondary)', lineHeight: 1,
