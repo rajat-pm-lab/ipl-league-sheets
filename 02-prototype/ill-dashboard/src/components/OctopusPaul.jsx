@@ -184,13 +184,13 @@ function PredCard({ label, emoji, player, projectedPts, accentColor }) {
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-      gap: 5, padding: '10px 4px 12px',
+      gap: 3, padding: '8px 4px 10px',
       background: `${accentColor}12`,
       border: `1px solid ${accentColor}40`,
       borderRadius: 12,
     }}>
-      <span style={{ fontSize: 15 }}>{emoji}</span>
-      <Avatar player={player} size={34} />
+      <span style={{ fontSize: 14 }}>{emoji}</span>
+      <Avatar player={player} size={30} />
       <div style={{
         fontSize: 10, fontWeight: 800, color: accentColor,
         textTransform: 'uppercase', letterSpacing: 0.4, textAlign: 'center',
@@ -321,14 +321,14 @@ export default function OctopusPaul({ weeklyData, players, selectedWeek, weekMat
   return (
     <div style={{
       margin: '14px 12px 4px',
-      padding: '14px 14px 16px',
+      padding: '12px 12px 14px',
       background: 'linear-gradient(135deg, rgba(61,142,224,0.08), rgba(30,60,120,0.12))',
       border: '1px solid rgba(61,142,224,0.2)',
       borderRadius: 16,
     }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-        <PaulSVG size={52} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <PaulSVG size={44} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 0.5, color: '#6FB8FF' }}>
             🔮 Paul's Week {selectedWeek} Winner Prediction
@@ -379,7 +379,7 @@ export default function OctopusPaul({ weeklyData, players, selectedWeek, weekMat
       </div>
 
       <div style={{
-        marginTop: 10, fontSize: 8, fontWeight: 600,
+        marginTop: 6, fontSize: 8, fontWeight: 600,
         color: 'rgba(255,255,255,0.2)', textAlign: 'center', letterSpacing: 0.3,
       }}>
         {weekDone
@@ -387,21 +387,28 @@ export default function OctopusPaul({ weeklyData, players, selectedWeek, weekMat
           : 'Projection updates after every match. Paul is an octopus. Blame him, not us.'}
       </div>
 
-      {/* Explainer toggle */}
+      {/* Explainer CTA */}
       <div
         onClick={() => setShowExplainer((v) => !v)}
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          marginTop: 10, paddingTop: 10,
-          borderTop: '1px solid rgba(255,255,255,0.05)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          marginTop: 10, padding: '8px 0',
+          background: 'rgba(61,142,224,0.1)',
+          border: '1px solid rgba(61,142,224,0.25)',
+          borderRadius: 10,
           cursor: 'pointer',
         }}
       >
-        <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.3 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#6FB8FF', letterSpacing: 0.3 }}>
           {showExplainer ? 'Got it' : 'How does Paul predict?'}
         </span>
-        <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)' }}>
-          {showExplainer ? '▴' : '▾'}
+        <span style={{
+          fontSize: 10, color: '#6FB8FF',
+          transform: showExplainer ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s',
+          display: 'inline-block',
+        }}>
+          ▾
         </span>
       </div>
 
