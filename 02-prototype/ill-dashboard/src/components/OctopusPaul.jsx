@@ -209,7 +209,7 @@ function PredCard({ label, emoji, player, projectedPts, accentColor }) {
           fontSize: 9, fontWeight: 700,
           color: accentColor, opacity: 0.7,
         }}>
-          ~{Math.round(projectedPts)} pts
+          ~{Math.round(projectedPts / 10) * 10} pts
         </div>
       )}
     </div>
