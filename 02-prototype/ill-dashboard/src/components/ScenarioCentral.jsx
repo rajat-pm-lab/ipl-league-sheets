@@ -7,73 +7,8 @@ function pickRoast(playerId) {
   return ROASTS[playerId % ROASTS.length]
 }
 
-// Simulate scoring for remaining matches given a specific outcome combination
-function simulateScenarios(weeklyScores, remainingMatches, predictions, correctPts) {
-  const playerIds = weeklyScores.map((s) => s.playerId)
-  const basePoints = {}
-  const baseWins = {}
-  weeklyScores.forEach((s) => {
-    basePoints[s.playerId] = s.points
-    baseWins[s.playerId] = s.wins
-  })
-
-  const n = remainingMatches.length
-  const totalCombos = 1 << n // 2^n
-  // For each player, track best rank, worst rank, and rank 1 count
-  const results = {}
-  playerIds.forEach((id) => {
-    results[id] = { bestRank: Infinity, worstRank: 0, rank1Count: 0, rankCounts: {} }
-  })
-
-  // Pre-compute each player's pick for each remaining match
-  const playerPicks = {}
-  playerIds.forEach((id) => {
-    playerPicks[id] = remainingMatches.map((m) => predictions[id]?.[m.matchNum] || null)
-  })
-
-  for (let combo = 0; combo < totalCombos; combo++) {
-    // Determine winner for each remaining match in this combo
-    const outcomes = remainingMatches.map((m, i) => (combo >> i) & 1 ? m.away : m.home)
-
-    // Compute points for each player
-    const pts = {}
-    const wins = {}
-    playerIds.forEach((id) => {
-      let extraPts = 0
-      let extraWins = 0
-      for (let i = 0; i < n; i++) {
-        if (playerPicks[id][i] === outcomes[i]) {
-          extraPts += correctPts
-          extraWins++
-        }
-      }
-      pts[id] = basePoints[id] + extraPts
-      wins[id] = baseWins[id] + extraWins
-    })
-
-    // Rank players
-    const sorted = playerIds
-      .map((id) => ({ id, pts: pts[id], wins: wins[id] }))
-      .sort((a, b) => b.pts - a.pts || b.wins - a.wins)
-
-    let currentRank = 1
-    sorted.forEach((entry, i) => {
-      if (i > 0 && (entry.pts !== sorted[i - 1].pts || entry.wins !== sorted[i - 1].wins)) {
-        currentRank = i + 1
-      }
-      const r = results[entry.id]
-      if (currentRank < r.bestRank) r.bestRank = currentRank
-      if (currentRank > r.worstRank) r.worstRank = currentRank
-      if (currentRank === 1) r.rank1Count++
-      r.rankCounts[currentRank] = (r.rankCounts[currentRank] || 0) + 1
-    })
-  }
-
-  return { results, totalCombos }
-}
-
-// Find which match outcomes are REQUIRED for a player to reach rank 1
-function findRank1Requirements(weeklyScores, remainingMatches, predictions, correctPts, playerId) {
+// Simulate all 2^N outcome combinations and track per-player stats
+function simulateScenarios(weeklyScores, remainingMatches, predictions, correctPts, players) {
   const playerIds = weeklyScores.map((s) => s.playerId)
   const basePoints = {}
   const baseWins = {}
@@ -85,56 +20,137 @@ function findRank1Requirements(weeklyScores, remainingMatches, predictions, corr
   const n = remainingMatches.length
   const totalCombos = 1 << n
 
+  const results = {}
+  playerIds.forEach((id) => {
+    results[id] = { bestRank: Infinity, worstRank: 0, rank1Count: 0, rankCounts: {} }
+  })
+
   const playerPicks = {}
   playerIds.forEach((id) => {
     playerPicks[id] = remainingMatches.map((m) => predictions[id]?.[m.matchNum] || null)
   })
 
-  // Track which match outcomes appear in ALL rank-1 scenarios
-  const rank1Combos = []
+  // For player-centric analysis: track correct-pick counts in rank-1 scenarios per target player
+  const rank1ByPlayer = {} // { targetPlayerId: { combos: [ { correctCounts: { playerId: count } } ] } }
+  playerIds.forEach((id) => { rank1ByPlayer[id] = [] })
 
   for (let combo = 0; combo < totalCombos; combo++) {
     const outcomes = remainingMatches.map((m, i) => (combo >> i) & 1 ? m.away : m.home)
 
     const pts = {}
     const wins = {}
+    const correctCounts = {}
     playerIds.forEach((id) => {
       let extraPts = 0
       let extraWins = 0
+      let correct = 0
       for (let i = 0; i < n; i++) {
         if (playerPicks[id][i] === outcomes[i]) {
           extraPts += correctPts
           extraWins++
+          correct++
         }
       }
       pts[id] = basePoints[id] + extraPts
       wins[id] = baseWins[id] + extraWins
+      correctCounts[id] = correct
     })
 
-    // Check if selected player is rank 1
-    const isRank1 = playerIds.every((id) => {
-      if (id === playerId) return true
-      return pts[playerId] > pts[id] ||
-        (pts[playerId] === pts[id] && wins[playerId] >= wins[id])
+    // Rank players
+    const sorted = playerIds
+      .map((id) => ({ id, pts: pts[id], wins: wins[id] }))
+      .sort((a, b) => b.pts - a.pts || b.wins - a.wins)
+
+    let currentRank = 1
+    const ranks = {}
+    sorted.forEach((entry, i) => {
+      if (i > 0 && (entry.pts !== sorted[i - 1].pts || entry.wins !== sorted[i - 1].wins)) {
+        currentRank = i + 1
+      }
+      ranks[entry.id] = currentRank
+      const r = results[entry.id]
+      if (currentRank < r.bestRank) r.bestRank = currentRank
+      if (currentRank > r.worstRank) r.worstRank = currentRank
+      if (currentRank === 1) r.rank1Count++
+      r.rankCounts[currentRank] = (r.rankCounts[currentRank] || 0) + 1
     })
 
-    if (isRank1) {
-      rank1Combos.push(outcomes)
-    }
+    // Store correct counts for each player's rank-1 scenarios
+    playerIds.forEach((id) => {
+      if (ranks[id] === 1) {
+        rank1ByPlayer[id].push(correctCounts)
+      }
+    })
   }
 
-  if (rank1Combos.length === 0) return null
-
-  // Find required outcomes: matches where ALL rank-1 scenarios have the same winner
-  const required = []
-  for (let i = 0; i < n; i++) {
-    const allSame = rank1Combos.every((combo) => combo[i] === rank1Combos[0][i])
-    if (allSame) {
-      required.push({ match: remainingMatches[i], mustWin: rank1Combos[0][i] })
+  // Compute player-centric requirements for each player's rank-1 scenarios
+  const playerRequirements = {}
+  playerIds.forEach((targetId) => {
+    const combos = rank1ByPlayer[targetId]
+    if (combos.length === 0) {
+      playerRequirements[targetId] = null
+      return
     }
-  }
 
-  return { required, totalPaths: rank1Combos.length, totalCombos }
+    // For the target player: min correct needed (across all rank-1 scenarios)
+    // For each other player: max correct allowed (across all rank-1 scenarios)
+    const req = {}
+    playerIds.forEach((id) => {
+      const counts = combos.map((c) => c[id])
+      if (id === targetId) {
+        req[id] = { min: Math.min(...counts), max: Math.max(...counts) }
+      } else {
+        req[id] = { min: Math.min(...counts), max: Math.max(...counts) }
+      }
+    })
+    playerRequirements[targetId] = { perPlayer: req, totalPaths: combos.length, totalCombos }
+  })
+
+  return { results, totalCombos, playerRequirements }
+}
+
+function MootBucket() {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      margin: '12px 0 4px', opacity: 0.9,
+    }}>
+      <svg width="80" height="90" viewBox="0 0 80 90">
+        {/* Bucket body */}
+        <path d="M15 25 L10 80 Q10 85 15 85 L65 85 Q70 85 70 80 L65 25 Z"
+          fill="#3A2518" stroke="#5C3D2E" strokeWidth="1.5" />
+        {/* Bucket rim */}
+        <ellipse cx="40" cy="25" rx="28" ry="6" fill="#5C3D2E" stroke="#7A5640" strokeWidth="1" />
+        {/* Water surface */}
+        <ellipse cx="40" cy="35" rx="24" ry="5" fill="rgba(255,215,0,0.3)" />
+        {/* Water body */}
+        <path d="M18 35 Q16 35 16 37 L13 75 Q13 80 18 80 L62 80 Q67 80 67 75 L64 37 Q64 35 62 35 Z"
+          fill="rgba(255,215,0,0.2)" />
+        {/* Water ripples */}
+        <ellipse cx="35" cy="36" rx="8" ry="2" fill="none" stroke="rgba(255,215,0,0.3)" strokeWidth="0.5">
+          <animate attributeName="rx" values="8;12;8" dur="2s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.5;0.2;0.5" dur="2s" repeatCount="indefinite" />
+        </ellipse>
+        {/* Handle */}
+        <path d="M20 20 Q40 5 60 20" fill="none" stroke="#7A5640" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Drops falling in */}
+        <circle cx="38" cy="12" r="2" fill="rgba(255,215,0,0.5)">
+          <animate attributeName="cy" values="8;32" dur="1.2s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.8;0" dur="1.2s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="43" cy="5" r="1.5" fill="rgba(255,215,0,0.4)">
+          <animate attributeName="cy" values="5;32" dur="1.5s" repeatCount="indefinite" begin="0.4s" />
+          <animate attributeName="opacity" values="0.7;0" dur="1.5s" repeatCount="indefinite" begin="0.4s" />
+        </circle>
+      </svg>
+      <div style={{
+        fontSize: 10, fontWeight: 700, color: 'var(--gold)', opacity: 0.6,
+        marginTop: 2, letterSpacing: 0.5,
+      }}>
+        moot pee le bhai 🪣
+      </div>
+    </div>
+  )
 }
 
 export default function ScenarioCentral({ weeklyData, players, selectedWeek, matchSchedule, allPredictions }) {
@@ -145,14 +161,9 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
   const weekMatches = matchSchedule?.[selectedWeek] || []
   const weekPredictions = allPredictions?.[selectedWeek] || {}
 
-  // Remaining matches = no winner yet
   const remainingMatches = weekMatches.filter((m) => m.winner === undefined)
-  const completedMatches = weekMatches.filter((m) => m.winner !== undefined)
-
-  // Points per correct pick (BAU week 5+)
   const correctPts = 10
 
-  // Current weekly leaderboard
   const currentRanked = useMemo(() => {
     if (!weekScores.length) return []
     const sorted = [...weekScores].sort((a, b) => b.points - a.points || b.wins - a.wins)
@@ -165,10 +176,8 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
 
   const scenario = useMemo(() => {
     if (!selectedPlayer || remainingMatches.length === 0) return null
-    const sim = simulateScenarios(weekScores, remainingMatches, weekPredictions, correctPts)
-    const req = findRank1Requirements(weekScores, remainingMatches, weekPredictions, correctPts, selectedPlayer)
-    return { ...sim, requirements: req, playerId: selectedPlayer }
-  }, [selectedPlayer, weekScores, remainingMatches, weekPredictions])
+    return simulateScenarios(weekScores, remainingMatches, weekPredictions, correctPts, players)
+  }, [selectedPlayer, weekScores, remainingMatches, weekPredictions, players])
 
   if (!weekScores.length || weekMatches.length === 0) return null
 
@@ -220,14 +229,12 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
       {expanded && (
         <div style={{ padding: '0 14px 16px' }}>
           {/* Player selector */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
-          }}>
+          <div style={{ marginBottom: 14 }}>
             <select
               value={selectedPlayer || ''}
               onChange={(e) => setSelectedPlayer(Number(e.target.value) || null)}
               style={{
-                flex: 1, background: 'var(--bg)', border: '1px solid rgba(255,255,255,0.12)',
+                width: '100%', background: 'var(--bg)', border: '1px solid rgba(255,255,255,0.12)',
                 color: 'var(--text)', padding: '10px 14px', borderRadius: 10,
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
               }}
@@ -239,7 +246,6 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
             </select>
           </div>
 
-          {/* No remaining matches */}
           {remainingMatches.length === 0 && (
             <div style={{
               padding: 16, textAlign: 'center', color: 'var(--text-secondary)',
@@ -249,7 +255,6 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
             </div>
           )}
 
-          {/* Scenario results */}
           {selectedPlayer && remainingMatches.length > 0 && scenario && playerResult && (
             <div>
               {/* Current standing card */}
@@ -273,18 +278,19 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                 </div>
               </div>
 
-              {/* Scenario verdict */}
               <ScenarioVerdict
                 playerResult={playerResult}
                 scenario={scenario}
                 playerObj={playerObj}
+                players={players}
                 currentRank={currentEntry?.rank}
                 remainingMatches={remainingMatches}
+                currentRanked={currentRanked}
+                selectedPlayer={selectedPlayer}
               />
             </div>
           )}
 
-          {/* Prompt to select if no player */}
           {!selectedPlayer && remainingMatches.length > 0 && (
             <div style={{
               padding: 20, textAlign: 'center', color: 'var(--text-secondary)',
@@ -299,10 +305,15 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
   )
 }
 
-function ScenarioVerdict({ playerResult, scenario, playerObj, currentRank, remainingMatches }) {
+function ScenarioVerdict({ playerResult, scenario, playerObj, players, currentRank, remainingMatches, currentRanked, selectedPlayer }) {
   const { bestRank, worstRank, rank1Count, rankCounts } = playerResult
-  const { totalCombos, requirements } = scenario
+  const { totalCombos, playerRequirements } = scenario
   const rank1Pct = Math.round((rank1Count / totalCombos) * 100)
+  const n = remainingMatches.length
+  const req = playerRequirements[selectedPlayer]
+
+  const playerLookup = {}
+  players.forEach((p) => { playerLookup[p.id] = p })
 
   // Already #1 and guaranteed
   if (bestRank === 1 && worstRank === 1) {
@@ -317,8 +328,23 @@ function ScenarioVerdict({ playerResult, scenario, playerObj, currentRank, remai
   }
 
   // Rank 1 is possible
-  if (rank1Count > 0) {
+  if (rank1Count > 0 && req) {
     const pctColor = rank1Pct >= 50 ? 'var(--green)' : rank1Pct >= 20 ? 'var(--orange)' : 'var(--red)'
+
+    // Build player-centric breakdown
+    // Selected player: needs at least X out of N
+    const selfReq = req.perPlayer[selectedPlayer]
+    // Other players sorted by current rank — only show those who are threats
+    const threats = currentRanked
+      .filter((r) => r.playerId !== selectedPlayer)
+      .map((r) => ({
+        ...r,
+        player: playerLookup[r.playerId],
+        reqData: req.perPlayer[r.playerId],
+      }))
+      // Only show players whose max allowed correct picks actually constrains something
+      .filter((t) => t.reqData && t.reqData.max < n)
+      .slice(0, 6) // Cap display at 6 threats
 
     return (
       <div>
@@ -353,59 +379,55 @@ function ScenarioVerdict({ playerResult, scenario, playerObj, currentRank, remai
           </div>
         </div>
 
-        {/* Requirements */}
-        {requirements && requirements.required.length > 0 && (
+        {/* Player-centric requirements */}
+        <div style={{
+          padding: '12px 14px', background: 'rgba(0,0,0,0.15)',
+          borderRadius: 10, marginTop: 8,
+        }}>
           <div style={{
-            padding: '10px 14px', background: 'rgba(0,0,0,0.15)',
-            borderRadius: 10, marginTop: 8,
+            fontSize: 11, fontWeight: 800, color: 'var(--gold)', marginBottom: 10,
           }}>
-            <div style={{
-              fontSize: 10, fontWeight: 700, color: 'var(--gold)',
-              textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
-            }}>
-              Ye hona zaroori hai — warna bhool ja:
-            </div>
-            {requirements.required.map(({ match, mustWin }) => (
-              <div key={match.matchNum} style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
-              }}>
-                <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 600, minWidth: 20 }}>
-                  M{match.matchNum}
-                </span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>
-                  {match.home} vs {match.away}
-                </span>
-                <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, color: 'var(--green)' }}>
-                  {mustWin} jeete ✓
-                </span>
-              </div>
-            ))}
-            {requirements.required.length < remainingMatches.length && (
-              <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 8, fontStyle: 'italic' }}>
-                Baaki matches mein kuch bhi ho sakta hai — tere favor mein bhi ja sakta hai
-              </div>
-            )}
+            {playerObj?.name} jeetega agar remaining {n} games mein:
           </div>
-        )}
 
-        {requirements && requirements.required.length === 0 && (
+          {/* Selected player's requirement */}
+          <PlayerReqRow
+            player={playerObj}
+            label={`${playerObj?.name} ke`}
+            min={selfReq.min}
+            max={selfReq.max}
+            total={n}
+            isSelf
+          />
+
+          {/* Threat players */}
+          {threats.map((t) => (
+            <PlayerReqRow
+              key={t.playerId}
+              player={t.player}
+              label={`${t.player.name} ke`}
+              min={t.reqData.min}
+              max={t.reqData.max}
+              total={n}
+            />
+          ))}
+
           <div style={{
-            padding: '10px 14px', background: 'rgba(0,200,83,0.08)',
-            borderRadius: 10, marginTop: 8, fontSize: 11, color: 'var(--green)',
-            fontWeight: 600,
+            fontSize: 10, fontWeight: 700, color: 'var(--gold)',
+            marginTop: 10, paddingTop: 8,
+            borderTop: '1px solid rgba(255,215,0,0.15)',
           }}>
-            Kisi specific result ki zaroorat nahi — multiple paths hain #1 tak. Duaa kar aur chill kar.
+            Tab chance hai — warna moot piyega bhai 🪣
           </div>
-        )}
+        </div>
 
         {/* Rank distribution */}
-        <RankDistribution rankCounts={rankCounts} totalCombos={totalCombos} bestRank={bestRank} />
+        <RankDistribution rankCounts={rankCounts} totalCombos={totalCombos} />
       </div>
     )
   }
 
-  // Rank 1 NOT possible — roast time
+  // Rank 1 NOT possible — full roast
   return (
     <div>
       <VerdictCard
@@ -414,6 +436,8 @@ function ScenarioVerdict({ playerResult, scenario, playerObj, currentRank, remai
         title={`${pickRoast(playerObj?.id)} — TUMSE NA HO PAYEGA BETA`}
         subtitle={`${playerObj?.name} ka Rank 1 is IMPOSSIBLE this week. Chahe kuch bhi ho jaye, #1 nahi aa sakta.`}
       />
+
+      <MootBucket />
 
       <div style={{
         margin: '10px 0', padding: '12px 14px',
@@ -426,7 +450,7 @@ function ScenarioVerdict({ playerResult, scenario, playerObj, currentRank, remai
               Best case scenario
             </div>
             <div style={{ fontSize: 11, color: 'var(--text)', marginTop: 4 }}>
-              Sab kuch tera favor mein ho toh bhi max yahan tak pohochega:
+              Sab kuch tera favor mein ho toh bhi max yahan tak:
             </div>
           </div>
           <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--orange)' }}>
@@ -454,8 +478,38 @@ function ScenarioVerdict({ playerResult, scenario, playerObj, currentRank, remai
         </div>
       </div>
 
-      {/* Rank distribution */}
-      <RankDistribution rankCounts={rankCounts} totalCombos={totalCombos} bestRank={bestRank} />
+      <RankDistribution rankCounts={rankCounts} totalCombos={totalCombos} />
+    </div>
+  )
+}
+
+function PlayerReqRow({ player, label, min, max, total, isSelf }) {
+  const rangeText = min === max
+    ? `${min} out of ${total} sahi ho`
+    : `${min}–${max} out of ${total} sahi ho`
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '7px 0',
+      borderBottom: '1px solid rgba(255,255,255,0.04)',
+    }}>
+      <Avatar player={player} size={22} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{
+          fontSize: 11, fontWeight: 700,
+          color: isSelf ? 'var(--gold)' : 'var(--text)',
+        }}>
+          {label}
+        </span>
+      </div>
+      <div style={{
+        fontSize: 11, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
+        color: isSelf ? 'var(--green)' : 'var(--text-secondary)',
+        textAlign: 'right',
+      }}>
+        {rangeText}
+      </div>
     </div>
   )
 }
@@ -480,7 +534,7 @@ function VerdictCard({ emoji, color, title, subtitle }) {
   )
 }
 
-function RankDistribution({ rankCounts, totalCombos, bestRank }) {
+function RankDistribution({ rankCounts, totalCombos }) {
   const ranks = Object.keys(rankCounts).map(Number).sort((a, b) => a - b)
   const maxCount = Math.max(...Object.values(rankCounts))
 
@@ -502,9 +556,7 @@ function RankDistribution({ rankCounts, totalCombos, bestRank }) {
         const color = rank === 1 ? 'var(--gold)' : rank <= 3 ? 'var(--green)' : rank >= 10 ? 'var(--red)' : 'var(--blue)'
         return (
           <div key={rank} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <span style={{
-              fontSize: 10, fontWeight: 800, color, minWidth: 22, textAlign: 'right',
-            }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color, minWidth: 22, textAlign: 'right' }}>
               #{rank}
             </span>
             <div style={{ flex: 1, height: 8, background: 'rgba(255,255,255,0.04)', borderRadius: 4, overflow: 'hidden' }}>
