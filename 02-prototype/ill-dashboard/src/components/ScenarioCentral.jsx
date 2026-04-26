@@ -109,6 +109,26 @@ function simulateScenarios(weeklyScores, remainingMatches, predictions, correctP
   return { results, totalCombos, playerRequirements }
 }
 
+function TvAntennaIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      {/* Antenna arms */}
+      <line x1="8" y1="2" x2="12" y2="8" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" />
+      <line x1="16" y1="2" x2="12" y2="8" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" />
+      {/* Antenna tips */}
+      <circle cx="8" cy="2" r="1" fill="var(--gold)" />
+      <circle cx="16" cy="2" r="1" fill="var(--gold)" />
+      {/* TV body */}
+      <rect x="4" y="8" width="16" height="12" rx="2" fill="var(--gold)" opacity="0.2" stroke="var(--gold)" strokeWidth="1.2" />
+      {/* Screen */}
+      <rect x="6" y="10" width="12" height="8" rx="1" fill="var(--gold)" opacity="0.1" />
+      {/* Signal waves */}
+      <path d="M14 13 Q16 12 14 11" stroke="var(--gold)" strokeWidth="0.8" fill="none" opacity="0.5" />
+      <path d="M15 14 Q18 12 15 10" stroke="var(--gold)" strokeWidth="0.6" fill="none" opacity="0.3" />
+    </svg>
+  )
+}
+
 function MootBucket() {
   return (
     <div style={{
@@ -162,6 +182,8 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
   const weekPredictions = allPredictions?.[selectedWeek] || {}
 
   const remainingMatches = weekMatches.filter((m) => m.winner === undefined)
+  const completedCount = weekMatches.length - remainingMatches.length
+  const noResultsYet = weekMatches.length > 0 && completedCount === 0
   const correctPts = 10
 
   const currentRanked = useMemo(() => {
@@ -201,7 +223,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 16 }}>🎯</span>
+          <TvAntennaIcon />
           <div>
             <div style={{
               fontSize: 12, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase',
@@ -210,9 +232,11 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
               Scenario Central
             </div>
             <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 1 }}>
-              {remainingMatches.length === 0
-                ? 'Sab matches ho gaye — ab kya hi scenario dekhega'
-                : `${remainingMatches.length} match${remainingMatches.length > 1 ? 'es' : ''} baaki — apni aukaat check kar`}
+              {noResultsYet
+                ? 'Abhi toh week shuru bhi nahi hua — ruk ja'
+                : remainingMatches.length === 0
+                  ? 'Sab matches ho gaye — ab kya hi scenario dekhega'
+                  : `${completedCount} done, ${remainingMatches.length} baaki — apni aukaat check kar`}
             </div>
           </div>
         </div>
@@ -228,8 +252,8 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
       {/* Expanded content */}
       {expanded && (
         <div style={{ padding: '0 14px 16px' }}>
-          {/* Player selector */}
-          <div style={{ marginBottom: 14 }}>
+          {/* Player selector — hidden when no results yet */}
+          {!noResultsYet && <div style={{ marginBottom: 14 }}>
             <select
               value={selectedPlayer || ''}
               onChange={(e) => setSelectedPlayer(Number(e.target.value) || null)}
@@ -244,9 +268,38 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
-          </div>
+          </div>}
 
-          {remainingMatches.length === 0 && (
+          {/* No results posted yet */}
+          {noResultsYet && (
+            <div style={{
+              padding: '20px 16px', textAlign: 'center',
+              background: 'rgba(0,0,0,0.2)', borderRadius: 10,
+            }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>📺</div>
+              <div style={{
+                fontSize: 14, fontWeight: 900, color: 'var(--orange)',
+                textTransform: 'uppercase', letterSpacing: 1,
+              }}>
+                Bklodeyyyy
+              </div>
+              <div style={{
+                fontSize: 12, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.6,
+              }}>
+                Result toh update hone de pehle.
+                <br />
+                Abhi koi match ka result nahi aaya — scenario kya dikhaye?
+              </div>
+              <div style={{
+                fontSize: 10, color: 'var(--text-secondary)', marginTop: 10,
+                opacity: 0.5, fontStyle: 'italic',
+              }}>
+                Jaise hi Vikrant results daalega, yahaan analysis aa jayega
+              </div>
+            </div>
+          )}
+
+          {remainingMatches.length === 0 && !noResultsYet && (
             <div style={{
               padding: 16, textAlign: 'center', color: 'var(--text-secondary)',
               fontSize: 12, fontStyle: 'italic',
@@ -255,7 +308,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
             </div>
           )}
 
-          {selectedPlayer && remainingMatches.length > 0 && scenario && playerResult && (
+          {!noResultsYet && selectedPlayer && remainingMatches.length > 0 && scenario && playerResult && (
             <div>
               {/* Current standing card */}
               <div style={{
@@ -291,7 +344,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
             </div>
           )}
 
-          {!selectedPlayer && remainingMatches.length > 0 && (
+          {!noResultsYet && !selectedPlayer && remainingMatches.length > 0 && (
             <div style={{
               padding: 20, textAlign: 'center', color: 'var(--text-secondary)',
               fontSize: 11,
