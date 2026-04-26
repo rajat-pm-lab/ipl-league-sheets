@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scenario Central — All 3 States</title>
+<style>
+  :root {
+    --bg: #0A1628;
+    --surface: #132237;
+    --surface-alt: #1A2D47;
+    --text: #FFFFFF;
+    --text-secondary: #8899AA;
+    --gold: #FFD700;
+    --green: #00C853;
+    --red: #FF1744;
+    --orange: #FF6D00;
+    --blue: #2979FF;
+    --grey: #607D8B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 420px; margin: 0 auto; padding: 16px 0;
+  }
+  .state-label {
+    text-align: center; padding: 16px 12px 8px;
+    font-size: 10px; font-weight: 800; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--orange);
+    border-top: 1px dashed rgba(255,109,0,0.3);
+    margin-top: 24px;
+  }
+  .state-label:first-child { margin-top: 0; border-top: none; }
+
+  .card {
+    margin: 8px 12px; border-radius: 14px;
+    background: linear-gradient(135deg, #132237, #1A2D47);
+    border: 1px solid rgba(255,215,0,0.15);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-header-left { display: flex; align-items: center; gap: 8px; }
+  .card-title {
+    font-size: 12px; font-weight: 800; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--gold);
+  }
+  .card-subtitle { font-size: 9px; color: var(--text-secondary); margin-top: 1px; }
+  .card-body { padding: 0 14px 16px; }
+
+  .player-card {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 12px;
+  }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--orange));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: var(--bg); flex-shrink: 0;
+  }
+  .avatar-sm {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--gold));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 800; color: var(--bg); flex-shrink: 0;
+  }
+  .player-name { font-size: 14px; font-weight: 800; }
+  .player-stats { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+  .big-rank { font-size: 24px; font-weight: 900; }
+
+  .verdict {
+    padding: 14px 16px; border-radius: 10px; margin-bottom: 4px;
+  }
+  .verdict-title { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .verdict-emoji { font-size: 18px; }
+  .verdict-text { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+  .verdict-sub { font-size: 11px; color: var(--text-secondary); line-height: 1.5; padding-left: 26px; }
+
+  .prob-bar-container {
+    margin: 10px 0; padding: 10px 14px; background: rgba(0,0,0,0.2); border-radius: 10px;
+  }
+  .prob-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .prob-label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .prob-pct { font-size: 16px; font-weight: 900; }
+  .prob-track { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .prob-fill { height: 100%; border-radius: 3px; }
+
+  .req-box {
+    padding: 12px 14px; background: rgba(0,0,0,0.15); border-radius: 10px; margin-top: 8px;
+  }
+  .req-title { font-size: 11px; font-weight: 800; color: var(--gold); margin-bottom: 10px; }
+  .req-row {
+    display: flex; align-items: center; gap: 8px; padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .req-name { flex: 1; font-size: 11px; font-weight: 700; }
+  .req-val { font-size: 11px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+  .req-footer {
+    font-size: 10px; font-weight: 700; color: var(--gold); margin-top: 10px;
+    padding-top: 8px; border-top: 1px solid rgba(255,215,0,0.15);
+  }
+
+  .rank-dist { margin-top: 10px; padding: 10px 14px; background: rgba(0,0,0,0.15); border-radius: 10px; }
+  .rank-dist-title {
+    font-size: 10px; font-weight: 700; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+  }
+  .rank-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .rank-num { font-size: 10px; font-weight: 800; min-width: 22px; text-align: right; }
+  .rank-bar { flex: 1; height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; }
+  .rank-fill { height: 100%; border-radius: 4px; opacity: 0.7; }
+  .rank-pct { font-size: 9px; font-weight: 700; color: var(--text-secondary); min-width: 32px; text-align: right; }
+
+  .best-worst {
+    padding: 12px 14px; border-radius: 10px; margin: 8px 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .bw-label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .bw-desc { font-size: 11px; color: var(--text); margin-top: 4px; }
+  .bw-rank { font-size: 28px; font-weight: 900; }
+
+  .no-result-box {
+    padding: 20px 16px; text-align: center;
+    background: rgba(0,0,0,0.2); border-radius: 10px;
+  }
+  .no-result-emoji { font-size: 32px; margin-bottom: 8px; }
+  .no-result-title { font-size: 14px; font-weight: 900; color: var(--orange); text-transform: uppercase; letter-spacing: 1px; }
+  .no-result-desc { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.6; }
+  .no-result-hint { font-size: 10px; color: var(--text-secondary); margin-top: 10px; opacity: 0.5; font-style: italic; }
+
+  .bucket { display: flex; flex-direction: column; align-items: center; margin: 12px 0 4px; opacity: 0.9; }
+  .bucket-label { font-size: 10px; font-weight: 700; color: var(--gold); opacity: 0.6; margin-top: 2px; letter-spacing: 0.5px; }
+
+  .tv-icon { flex-shrink: 0; }
+
+  @keyframes pulse { 0%,100%{opacity:0.8} 50%{opacity:0.3} }
+  @keyframes drip1 { 0%{cy:8;opacity:0.8} 100%{cy:32;opacity:0} }
+  @keyframes drip2 { 0%{cy:5;opacity:0.7} 100%{cy:32;opacity:0} }
+  @keyframes ripple { 0%,100%{rx:8;opacity:0.5} 50%{rx:12;opacity:0.2} }
+</style>
+</head>
+<body>
+
+<!-- ==================== STATE 1: No Results Yet ==================== -->
+<div class="state-label">State 1 — Week Just Started, No Results Yet</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-left">
+      <svg class="tv-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <line x1="8" y1="2" x2="12" y2="8" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="16" y1="2" x2="12" y2="8" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="8" cy="2" r="1" fill="var(--gold)"/>
+        <circle cx="16" cy="2" r="1" fill="var(--gold)"/>
+        <rect x="4" y="8" width="16" height="12" rx="2" fill="var(--gold)" opacity="0.2" stroke="var(--gold)" stroke-width="1.2"/>
+        <rect x="6" y="10" width="12" height="8" rx="1" fill="var(--gold)" opacity="0.1"/>
+        <path d="M14 13 Q16 12 14 11" stroke="var(--gold)" stroke-width="0.8" fill="none" opacity="0.5"/>
+        <path d="M15 14 Q18 12 15 10" stroke="var(--gold)" stroke-width="0.6" fill="none" opacity="0.3"/>
+      </svg>
+      <div>
+        <div class="card-title">Scenario Central</div>
+        <div class="card-subtitle">Abhi toh week shuru bhi nahi hua — ruk ja</div>
+      </div>
+    </div>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round" style="transform:rotate(180deg)">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </div>
+  <div class="card-body">
+    <div class="no-result-box">
+      <div class="no-result-emoji">📺</div>
+      <div class="no-result-title">Bklodeyyyy</div>
+      <div class="no-result-desc">
+        Result toh update hone de pehle.<br>
+        Abhi koi match ka result nahi aaya — scenario kya dikhaye?
+      </div>
+      <div class="no-result-hint">
+        Jaise hi Rajjo results daalega, yahaan analysis aa jayega
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== STATE 2A: Rank 1 Possible ==================== -->
+<div class="state-label">State 2A — Mid-Week, Rank 1 IS Possible (Rajjo selected)</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-left">
+      <svg class="tv-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <line x1="8" y1="2" x2="12" y2="8" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="16" y1="2" x2="12" y2="8" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="8" cy="2" r="1" fill="var(--gold)"/>
+        <circle cx="16" cy="2" r="1" fill="var(--gold)"/>
+        <rect x="4" y="8" width="16" height="12" rx="2" fill="var(--gold)" opacity="0.2" stroke="var(--gold)" stroke-width="1.2"/>
+        <rect x="6" y="10" width="12" height="8" rx="1" fill="var(--gold)" opacity="0.1"/>
+        <path d="M14 13 Q16 12 14 11" stroke="var(--gold)" stroke-width="0.8" fill="none" opacity="0.5"/>
+        <path d="M15 14 Q18 12 15 10" stroke="var(--gold)" stroke-width="0.6" fill="none" opacity="0.3"/>
+      </svg>
+      <div>
+        <div class="card-title">Scenario Central</div>
+        <div class="card-subtitle">4 done, 5 baaki — apni aukaat check kar</div>
+      </div>
+    </div>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round" style="transform:rotate(180deg)">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </div>
+  <div class="card-body">
+    <!-- Player card -->
+    <div class="player-card">
+      <div class="avatar">RJ</div>
+      <div style="flex:1">
+        <div class="player-name">Rajjo</div>
+        <div class="player-stats">Abhi Rank #3 &nbsp;|&nbsp; 30 pts &nbsp;|&nbsp; 3W-1L</div>
+      </div>
+      <div class="big-rank" style="color:var(--text-secondary)">#3</div>
+    </div>
+
+    <!-- Verdict: Possible -->
+    <div class="verdict" style="background:rgba(0,200,83,0.06);border:1px solid rgba(0,200,83,0.2)">
+      <div class="verdict-title">
+        <span class="verdict-emoji">🔥</span>
+        <span class="verdict-text" style="color:var(--green)">CHANCE HAI BHAI!</span>
+      </div>
+      <div class="verdict-sub">6 out of 32 scenarios mein Rajjo #1 finish karega</div>
+    </div>
+
+    <!-- Probability bar -->
+    <div class="prob-bar-container">
+      <div class="prob-header">
+        <span class="prob-label">Rank 1 probability</span>
+        <span class="prob-pct" style="color:var(--red)">19%</span>
+      </div>
+      <div class="prob-track">
+        <div class="prob-fill" style="width:19%;background:linear-gradient(90deg,var(--red),var(--gold))"></div>
+      </div>
+    </div>
+
+    <!-- Player-centric requirements -->
+    <div class="req-box">
+      <div class="req-title">Rajjo jeetega agar remaining 5 games mein:</div>
+
+      <div class="req-row">
+        <div class="avatar-sm" style="background:linear-gradient(135deg,var(--gold),var(--orange))">RJ</div>
+        <div class="req-name" style="color:var(--gold)">Rajjo ke</div>
+        <div class="req-val" style="color:var(--green)">4–5 out of 5 sahi ho</div>
+      </div>
+      <div class="req-row">
+        <div class="avatar-sm">VK</div>
+        <div class="req-name">Vikrant ke</div>
+        <div class="req-val" style="color:var(--text-secondary)">0–2 out of 5 sahi ho</div>
+      </div>
+      <div class="req-row">
+        <div class="avatar-sm">SN</div>
+        <div class="req-name">Shan ke</div>
+        <div class="req-val" style="color:var(--text-secondary)">0–3 out of 5 sahi ho</div>
+      </div>
+      <div class="req-row">
+        <div class="avatar-sm">DP</div>
+        <div class="req-name">Deepanshu ke</div>
+        <div class="req-val" style="color:var(--text-secondary)">0–2 out of 5 sahi ho</div>
+      </div>
+
+      <div class="req-footer">Tab chance hai — warna moot piyega bhai 🪣</div>
+    </div>
+
+    <!-- Rank distribution -->
+    <div class="rank-dist">
+      <div class="rank-dist-title">Rank distribution — kitne scenarios mein kahan finish karega</div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--gold)">#1</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:38%;background:var(--gold)"></div></div>
+        <span class="rank-pct">19%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--green)">#2</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:50%;background:var(--green)"></div></div>
+        <span class="rank-pct">25%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--green)">#3</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:100%;background:var(--green)"></div></div>
+        <span class="rank-pct">31%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--blue)">#4</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:32%;background:var(--blue)"></div></div>
+        <span class="rank-pct">16%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--blue)">#5</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:18%;background:var(--blue)"></div></div>
+        <span class="rank-pct">9%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== STATE 2B: Rank 1 IMPOSSIBLE ==================== -->
+<div class="state-label">State 2B — Mid-Week, Rank 1 IMPOSSIBLE (Tushar selected)</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-left">
+      <svg class="tv-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <line x1="8" y1="2" x2="12" y2="8" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="16" y1="2" x2="12" y2="8" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="8" cy="2" r="1" fill="var(--gold)"/>
+        <circle cx="16" cy="2" r="1" fill="var(--gold)"/>
+        <rect x="4" y="8" width="16" height="12" rx="2" fill="var(--gold)" opacity="0.2" stroke="var(--gold)" stroke-width="1.2"/>
+        <rect x="6" y="10" width="12" height="8" rx="1" fill="var(--gold)" opacity="0.1"/>
+        <path d="M14 13 Q16 12 14 11" stroke="var(--gold)" stroke-width="0.8" fill="none" opacity="0.5"/>
+        <path d="M15 14 Q18 12 15 10" stroke="var(--gold)" stroke-width="0.6" fill="none" opacity="0.3"/>
+      </svg>
+      <div>
+        <div class="card-title">Scenario Central</div>
+        <div class="card-subtitle">4 done, 5 baaki — apni aukaat check kar</div>
+      </div>
+    </div>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round" style="transform:rotate(180deg)">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </div>
+  <div class="card-body">
+    <!-- Player card -->
+    <div class="player-card">
+      <div class="avatar" style="background:linear-gradient(135deg,var(--red),var(--orange))">TU</div>
+      <div style="flex:1">
+        <div class="player-name">Tushar</div>
+        <div class="player-stats">Abhi Rank #9 &nbsp;|&nbsp; 10 pts &nbsp;|&nbsp; 1W-3L</div>
+      </div>
+      <div class="big-rank" style="color:var(--text-secondary)">#9</div>
+    </div>
+
+    <!-- Verdict: Impossible -->
+    <div class="verdict" style="background:rgba(255,23,68,0.06);border:1px solid rgba(255,23,68,0.2)">
+      <div class="verdict-title">
+        <span class="verdict-emoji">💀</span>
+        <span class="verdict-text" style="color:var(--red)">BKL — TUMSE NA HO PAYEGA BETA</span>
+      </div>
+      <div class="verdict-sub">Tushar ka Rank 1 is IMPOSSIBLE this week. Chahe kuch bhi ho jaye, #1 nahi aa sakta.</div>
+    </div>
+
+    <!-- Moot Bucket -->
+    <div class="bucket">
+      <svg width="80" height="90" viewBox="0 0 80 90">
+        <path d="M15 25 L10 80 Q10 85 15 85 L65 85 Q70 85 70 80 L65 25 Z" fill="#3A2518" stroke="#5C3D2E" stroke-width="1.5"/>
+        <ellipse cx="40" cy="25" rx="28" ry="6" fill="#5C3D2E" stroke="#7A5640" stroke-width="1"/>
+        <ellipse cx="40" cy="35" rx="24" ry="5" fill="rgba(255,215,0,0.3)"/>
+        <path d="M18 35 Q16 35 16 37 L13 75 Q13 80 18 80 L62 80 Q67 80 67 75 L64 37 Q64 35 62 35 Z" fill="rgba(255,215,0,0.2)"/>
+        <ellipse cx="35" cy="36" rx="8" ry="2" fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="0.5">
+          <animate attributeName="rx" values="8;12;8" dur="2s" repeatCount="indefinite"/>
+        </ellipse>
+        <path d="M20 20 Q40 5 60 20" fill="none" stroke="#7A5640" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="38" cy="12" r="2" fill="rgba(255,215,0,0.5)">
+          <animate attributeName="cy" values="8;32" dur="1.2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.8;0" dur="1.2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="43" cy="5" r="1.5" fill="rgba(255,215,0,0.4)">
+          <animate attributeName="cy" values="5;32" dur="1.5s" repeatCount="indefinite" begin="0.4s"/>
+          <animate attributeName="opacity" values="0.7;0" dur="1.5s" repeatCount="indefinite" begin="0.4s"/>
+        </circle>
+      </svg>
+      <div class="bucket-label">moot pee le bhai 🪣</div>
+    </div>
+
+    <!-- Best / Worst -->
+    <div class="best-worst" style="background:rgba(255,23,68,0.08);border:1px solid rgba(255,23,68,0.15)">
+      <div>
+        <div class="bw-label">Best case scenario</div>
+        <div class="bw-desc">Sab kuch tera favor mein ho toh bhi max yahan tak:</div>
+      </div>
+      <div class="bw-rank" style="color:var(--orange)">#4</div>
+    </div>
+    <div class="best-worst" style="background:rgba(0,0,0,0.15)">
+      <div>
+        <div class="bw-label">Worst case</div>
+        <div class="bw-desc">Agar kismat bhi saath nahi di toh:</div>
+      </div>
+      <div class="bw-rank" style="color:var(--red)">#11</div>
+    </div>
+
+    <!-- Rank distribution -->
+    <div class="rank-dist">
+      <div class="rank-dist-title">Rank distribution — kitne scenarios mein kahan finish karega</div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--blue)">#4</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:20%;background:var(--blue)"></div></div>
+        <span class="rank-pct">6%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--blue)">#5</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:35%;background:var(--blue)"></div></div>
+        <span class="rank-pct">13%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--blue)">#6</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:55%;background:var(--blue)"></div></div>
+        <span class="rank-pct">19%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--blue)">#7</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:100%;background:var(--blue)"></div></div>
+        <span class="rank-pct">25%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--blue)">#8</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:70%;background:var(--blue)"></div></div>
+        <span class="rank-pct">19%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--red)">#9</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:40%;background:var(--red)"></div></div>
+        <span class="rank-pct">12%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--red)">#10</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:15%;background:var(--red)"></div></div>
+        <span class="rank-pct">4%</span>
+      </div>
+      <div class="rank-row">
+        <span class="rank-num" style="color:var(--red)">#11</span>
+        <div class="rank-bar"><div class="rank-fill" style="width:8%;background:var(--red)"></div></div>
+        <span class="rank-pct">2%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== STATE 3: Week Complete ==================== -->
+<div class="state-label">State 3 — All Matches Complete</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-header-left">
+      <svg class="tv-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <line x1="8" y1="2" x2="12" y2="8" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="16" y1="2" x2="12" y2="8" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="8" cy="2" r="1" fill="var(--gold)"/>
+        <circle cx="16" cy="2" r="1" fill="var(--gold)"/>
+        <rect x="4" y="8" width="16" height="12" rx="2" fill="var(--gold)" opacity="0.2" stroke="var(--gold)" stroke-width="1.2"/>
+        <rect x="6" y="10" width="12" height="8" rx="1" fill="var(--gold)" opacity="0.1"/>
+        <path d="M14 13 Q16 12 14 11" stroke="var(--gold)" stroke-width="0.8" fill="none" opacity="0.5"/>
+        <path d="M15 14 Q18 12 15 10" stroke="var(--gold)" stroke-width="0.6" fill="none" opacity="0.3"/>
+      </svg>
+      <div>
+        <div class="card-title">Scenario Central</div>
+        <div class="card-subtitle">Sab matches ho gaye — ab kya hi scenario dekhega</div>
+      </div>
+    </div>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round" style="transform:rotate(180deg)">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </div>
+  <div class="card-body">
+    <div style="padding:16px;text-align:center;color:var(--text-secondary);font-size:12px;font-style:italic">
+      Week khatam bhai. Jo ho gaya so ho gaya. Ab Weekly leaderboard dekh le.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

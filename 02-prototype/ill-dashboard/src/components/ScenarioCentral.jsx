@@ -294,7 +294,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                 fontSize: 10, color: 'var(--text-secondary)', marginTop: 10,
                 opacity: 0.5, fontStyle: 'italic',
               }}>
-                Jaise hi Vikrant results daalega, yahaan analysis aa jayega
+                Jaise hi Rajjo results daalega, yahaan analysis aa jayega
               </div>
             </div>
           )}
