@@ -251,6 +251,20 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                   ? `Projected Standings (${selectedCount} of ${remainingMatches.length} set)`
                   : 'Current Standings'}
               </SectionLabel>
+              {/* Table header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '4px 10px', marginBottom: 2,
+              }}>
+                <div style={{ fontSize: 8, fontWeight: 700, minWidth: 28, textAlign: 'center', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>#</div>
+                <div style={{ width: 26 }} />
+                <div style={{ flex: 1, fontSize: 8, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Player</div>
+                <div style={{ fontSize: 8, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>W-L</div>
+                <div style={{ fontSize: 8, fontWeight: 700, minWidth: 30, textAlign: 'right', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Pts</div>
+                {selectedCount > 0 && (
+                  <div style={{ fontSize: 8, fontWeight: 700, minWidth: 24, textAlign: 'right', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>+/-</div>
+                )}
+              </div>
               {projectedRanked.map(entry => {
                 const player = playerLookup[entry.playerId]
                 if (!player) return null
