@@ -130,6 +130,8 @@ export default function Leaderboard() {
         selectedWeek={data.currentWeek || 1}
         matchSchedule={data.matchSchedule}
         allPredictions={data.allPredictions}
+        teamFormData={data.teamFormData}
+        teamAccuracy={data.teamAccuracy}
       />
 
       {/* Tabs */}
