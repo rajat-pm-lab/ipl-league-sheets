@@ -3,7 +3,6 @@ import { useLeagueData } from '../data/DataContext'
 
 import LeaderboardTable from '../components/LeaderboardTable'
 import PredictionsView from '../components/PredictionsView'
-import OctopusPaul from '../components/OctopusPaul'
 import ScenarioCentral from '../components/ScenarioCentral'
 import Certificates from './Certificates'
 
@@ -113,16 +112,6 @@ export default function Leaderboard() {
         </span>
       </div>
 
-      {/* Octopus Paul Prediction — always anchored to the live/current week */}
-      <OctopusPaul
-        weeklyData={weeklyData}
-        players={players}
-        selectedWeek={data.currentWeek || 1}
-        weekMatches={data?.matchSchedule?.[data.currentWeek || 1] || []}
-        allPredictions={data.allPredictions}
-        cannibResolution={data.cannibResolution}
-      />
-
       {/* Scenario Central */}
       <ScenarioCentral
         weeklyData={weeklyData}
@@ -130,8 +119,6 @@ export default function Leaderboard() {
         selectedWeek={data.currentWeek || 1}
         matchSchedule={data.matchSchedule}
         allPredictions={data.allPredictions}
-        teamFormData={data.teamFormData}
-        teamAccuracy={data.teamAccuracy}
       />
 
       {/* Tabs */}
