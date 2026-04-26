@@ -12,7 +12,7 @@ It uses Google Sheets as the backend — no traditional database.
 ## Who This Is For
 - **Builder:** Rajat Singh (PM + product designer, non-technical)
 - **Users:** 12 NSIT alumni (2012-2016 batch) competing in a private IPL prediction league
-- **Admin:** Vikrant (enters match results, manages data)
+- **Admin:** Rajat (enters match results, manages data)
 
 ---
 
