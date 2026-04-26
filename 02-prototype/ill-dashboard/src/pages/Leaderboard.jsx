@@ -4,6 +4,7 @@ import { useLeagueData } from '../data/DataContext'
 import LeaderboardTable from '../components/LeaderboardTable'
 import PredictionsView from '../components/PredictionsView'
 import OctopusPaul from '../components/OctopusPaul'
+import ScenarioCentral from '../components/ScenarioCentral'
 import Certificates from './Certificates'
 
 const TABS = ['Weekly', 'Stage', 'Overall', 'Picks', 'Awards']
@@ -20,7 +21,8 @@ export default function Leaderboard() {
     if (data && !weekInitialized) {
       const cw = data.currentWeek || 1
       setSelectedWeek(cw)
-      setSelectedStage(cw <= 4 ? 'STAGE_1' : cw <= 7 ? 'STAGE_2' : 'STAGE_3')
+      const stageKey = Object.entries(data.stages).find(([, s]) => s.weeks.includes(cw))?.[0] || 'STAGE_1'
+      setSelectedStage(stageKey)
       setWeekInitialized(true)
     }
   }, [data, weekInitialized])
@@ -53,7 +55,7 @@ export default function Leaderboard() {
     leaderboard = computeStageLeaderboard(weeklyData, allWeeks, players)
   }
 
-  const currentStageKey = selectedWeek <= 4 ? 'STAGE_1' : selectedWeek <= 7 ? 'STAGE_2' : 'STAGE_3'
+  const currentStageKey = Object.entries(stages).find(([, s]) => s.weeks.includes(selectedWeek))?.[0] || 'STAGE_1'
   const currentStage = stages[currentStageKey]
 
   return (
@@ -119,6 +121,15 @@ export default function Leaderboard() {
         weekMatches={data?.matchSchedule?.[data.currentWeek || 1] || []}
         allPredictions={data.allPredictions}
         cannibResolution={data.cannibResolution}
+      />
+
+      {/* Scenario Central */}
+      <ScenarioCentral
+        weeklyData={weeklyData}
+        players={players}
+        selectedWeek={data.currentWeek || 1}
+        matchSchedule={data.matchSchedule}
+        allPredictions={data.allPredictions}
       />
 
       {/* Tabs */}
