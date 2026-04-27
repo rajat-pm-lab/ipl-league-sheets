@@ -262,7 +262,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                 <div style={{ fontSize: 8, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>W-L</div>
                 <div style={{ fontSize: 8, fontWeight: 700, minWidth: 30, textAlign: 'right', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Pts</div>
                 {selectedCount > 0 && (
-                  <div style={{ fontSize: 8, fontWeight: 700, minWidth: 24, textAlign: 'right', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>+/-</div>
+                  <div style={{ fontSize: 8, fontWeight: 700, minWidth: 24, textAlign: 'right', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>▲▼</div>
                 )}
               </div>
               {projectedRanked.map(entry => {
@@ -412,7 +412,7 @@ function ToggleMatchCard({ match, selected, onToggle }) {
             fontSize: 12, fontWeight: 800,
             transition: 'all 0.25s ease',
             color: selected === home ? 'var(--bg)' : 'var(--text-secondary)',
-            background: selected === home ? 'var(--blue)' : 'transparent',
+            background: selected === home ? 'var(--green)' : 'transparent',
             opacity: selected && selected !== home ? 0.35 : 1,
           }}
         >
@@ -426,7 +426,7 @@ function ToggleMatchCard({ match, selected, onToggle }) {
             fontSize: 12, fontWeight: 800,
             transition: 'all 0.25s ease',
             color: selected === away ? 'var(--bg)' : 'var(--text-secondary)',
-            background: selected === away ? 'var(--orange)' : 'transparent',
+            background: selected === away ? 'var(--green)' : 'transparent',
             opacity: selected && selected !== away ? 0.35 : 1,
           }}
         >
@@ -488,7 +488,7 @@ function ProjectionRow({ player, rank, points, wins, losses, delta, hasSelection
           fontSize: 9, fontWeight: 700, minWidth: 24, textAlign: 'right',
           color: delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text-secondary)',
         }}>
-          {delta > 0 ? `+${delta}` : delta < 0 ? delta : '-'}
+          {delta > 0 ? `▲${delta}` : delta < 0 ? `▼${Math.abs(delta)}` : '–'}
         </div>
       )}
     </div>

@@ -122,6 +122,13 @@ Edit the `Rules` tab in Google Sheet:
 
 ---
 
+## Scenario Central UI Conventions
+- **Standings rank changes:** Use ▲/▼ arrows (green/red) — not +/- numbers
+- **Team selection color:** Always **green** for both home and away picks — no per-side colors (blue/orange)
+- **Header labels:** Standings table has column headers: #, Player, W-L, Pts, ▲▼
+
+---
+
 ## Security
 - Private Key IPL JSON folder is in .gitignore — never commit service account keys
 - No real phone numbers or emails in code
