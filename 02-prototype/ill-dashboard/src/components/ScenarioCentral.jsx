@@ -225,30 +225,17 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                 </div>
               </div>
 
-              {/* Completed matches (locked) */}
-              {completedMatches.length > 0 && (
-                <>
-                  <SectionLabel>Completed Matches</SectionLabel>
-                  {completedMatches.map(m => (
-                    <LockedMatchCard key={m.matchNum} match={m} />
-                  ))}
-                </>
-              )}
-
-              {/* Upcoming matches (toggleable) */}
-              <SectionLabel>Upcoming — Pick Winners</SectionLabel>
-
-              {/* Player comparison dropdown */}
+              {/* Player comparison dropdown — global level */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                marginBottom: 12, padding: '8px 10px',
+                marginBottom: 10, padding: '8px 10px',
                 background: 'rgba(0,0,0,0.15)', borderRadius: 8,
               }}>
                 <span style={{
                   fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)',
                   textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap',
                 }}>
-                  Compare with
+                  Scenario for
                 </span>
                 <select
                   value={comparePlayerId}
@@ -260,7 +247,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                     fontSize: 11, fontWeight: 600, cursor: 'pointer',
                   }}
                 >
-                  <option value="">No player selected</option>
+                  <option value="">Select a player</option>
                   {players.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
@@ -268,14 +255,30 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
               </div>
               {comparePlayerId && (
                 <div style={{
-                  fontSize: 8, color: 'var(--text-secondary)', marginBottom: 8,
+                  fontSize: 8, color: 'var(--text-secondary)', marginBottom: 10,
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}>
-                  <span><span style={{ color: 'var(--green)', fontWeight: 800 }}>Green</span> = matches {playerLookup[comparePlayerId]?.name}'s pick</span>
-                  <span><span style={{ color: 'var(--red)', fontWeight: 800 }}>Red</span> = differs from pick</span>
+                  <span><span style={{ color: 'var(--green)', fontWeight: 800 }}>Green</span> = correct / matches {playerLookup[comparePlayerId]?.name}'s pick</span>
+                  <span><span style={{ color: 'var(--red)', fontWeight: 800 }}>Red</span> = wrong / differs from pick</span>
                 </div>
               )}
 
+              {/* Completed matches (locked) */}
+              {completedMatches.length > 0 && (
+                <>
+                  <SectionLabel>Completed Matches</SectionLabel>
+                  {completedMatches.map(m => (
+                    <LockedMatchCard
+                      key={m.matchNum}
+                      match={m}
+                      playerPick={comparePlayerId ? weekPredictions[comparePlayerId]?.[m.matchNum] : null}
+                    />
+                  ))}
+                </>
+              )}
+
+              {/* Upcoming matches (toggleable) */}
+              <SectionLabel>Upcoming — Pick Winners</SectionLabel>
               {remainingMatches.map(m => (
                 <ToggleMatchCard
                   key={m.matchNum}
@@ -364,14 +367,19 @@ function SectionLabel({ children }) {
   )
 }
 
-function LockedMatchCard({ match }) {
+function LockedMatchCard({ match, playerPick }) {
   const { matchNum, home, away, winner, date } = match
+  const gotItRight = playerPick ? playerPick === winner : null
+  const badgeColor = gotItRight === true ? 'var(--green)' : gotItRight === false ? 'var(--red)' : null
+
   return (
     <div style={{
       borderRadius: 10, padding: '10px 12px', marginBottom: 8,
       background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.04)',
-      opacity: 0.55,
+      border: playerPick
+        ? `1px solid ${gotItRight ? 'rgba(76,175,80,0.3)' : 'rgba(255,23,68,0.3)'}`
+        : '1px solid rgba(255,255,255,0.04)',
+      opacity: playerPick ? 0.85 : 0.55,
     }}>
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -383,14 +391,26 @@ function LockedMatchCard({ match }) {
         }}>
           Match {matchNum}{date ? ` · ${date}` : ''}
         </span>
-        <span style={{
-          fontSize: 8, fontWeight: 700, color: 'var(--green)',
-          background: 'rgba(76,175,80,0.15)',
-          padding: '2px 6px', borderRadius: 4,
-          textTransform: 'uppercase', letterSpacing: 0.3,
-        }}>
-          Result
-        </span>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          {playerPick && (
+            <span style={{
+              fontSize: 8, fontWeight: 700, color: badgeColor,
+              background: gotItRight ? 'rgba(76,175,80,0.15)' : 'rgba(255,23,68,0.15)',
+              padding: '2px 6px', borderRadius: 4,
+              textTransform: 'uppercase', letterSpacing: 0.3,
+            }}>
+              {gotItRight ? 'Correct' : 'Wrong'} · Picked {playerPick}
+            </span>
+          )}
+          <span style={{
+            fontSize: 8, fontWeight: 700, color: 'var(--green)',
+            background: 'rgba(76,175,80,0.15)',
+            padding: '2px 6px', borderRadius: 4,
+            textTransform: 'uppercase', letterSpacing: 0.3,
+          }}>
+            Result
+          </span>
+        </div>
       </div>
       <div style={{
         display: 'flex', borderRadius: 8, overflow: 'hidden',
