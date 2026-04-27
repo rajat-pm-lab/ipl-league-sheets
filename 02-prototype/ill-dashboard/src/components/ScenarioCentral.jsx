@@ -144,10 +144,10 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
             </div>
             <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 1 }}>
               {allDone
-                ? 'Sab matches ho gaye — ab kya hi scenario dekhega'
+                ? 'All matches completed — final standings are in'
                 : noResultsYet
-                  ? 'Abhi toh week shuru bhi nahi hua — ruk ja'
-                  : `${completedMatches.length} done, ${remainingMatches.length} baaki — toggle karke dekh kya hoga`}
+                  ? 'No results yet — check back after matches start'
+                  : `${completedMatches.length} done, ${remainingMatches.length} remaining — toggle outcomes to see projections`}
             </div>
           </div>
         </div>
@@ -175,20 +175,20 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                 fontSize: 14, fontWeight: 900, color: 'var(--orange)',
                 textTransform: 'uppercase', letterSpacing: 1,
               }}>
-                Bklodeyyyy
+                Hold On!
               </div>
               <div style={{
                 fontSize: 12, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.6,
               }}>
-                Result toh update hone de pehle.
+                No match results have been updated yet.
                 <br />
-                Abhi koi match ka result nahi aaya — scenario kya dikhaye?
+                Scenarios will be available once results start coming in.
               </div>
               <div style={{
                 fontSize: 10, color: 'var(--text-secondary)', marginTop: 10,
                 opacity: 0.5, fontStyle: 'italic',
               }}>
-                Jaise hi Rajjo results daalega, yahaan analysis aa jayega
+                Analysis will appear here once results are entered
               </div>
             </div>
           )}
@@ -199,7 +199,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
               padding: 16, textAlign: 'center', color: 'var(--text-secondary)',
               fontSize: 12, fontStyle: 'italic',
             }}>
-              Week khatam bhai. Jo ho gaya so ho gaya. Ab Weekly leaderboard dekh le.
+              All matches are done for this week. Check the Weekly leaderboard for final standings.
             </div>
           )}
 
@@ -218,7 +218,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                   {remainingMatches.length}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                  matches baaki hain
+                  matches remaining
                   <br />
                   <strong style={{ color: 'var(--text)' }}>Tap teams to pick winners</strong>
                 </div>
