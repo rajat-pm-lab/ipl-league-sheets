@@ -28,6 +28,7 @@ function ResetIcon() {
 export default function ScenarioCentral({ weeklyData, players, selectedWeek, matchSchedule, allPredictions }) {
   const [expanded, setExpanded] = useState(false)
   const [selectedOutcomes, setSelectedOutcomes] = useState({})
+  const [comparePlayerId, setComparePlayerId] = useState('')
 
   const weekScores = weeklyData?.[selectedWeek] || []
   const weekMatches = matchSchedule?.[selectedWeek] || []
@@ -236,12 +237,52 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
 
               {/* Upcoming matches (toggleable) */}
               <SectionLabel>Upcoming — Pick Winners</SectionLabel>
+
+              {/* Player comparison dropdown */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                marginBottom: 12, padding: '8px 10px',
+                background: 'rgba(0,0,0,0.15)', borderRadius: 8,
+              }}>
+                <span style={{
+                  fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)',
+                  textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap',
+                }}>
+                  Compare with
+                </span>
+                <select
+                  value={comparePlayerId}
+                  onChange={(e) => setComparePlayerId(e.target.value)}
+                  style={{
+                    flex: 1, background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'var(--text)', padding: '6px 10px', borderRadius: 6,
+                    fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  <option value="">No player selected</option>
+                  {players.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              {comparePlayerId && (
+                <div style={{
+                  fontSize: 8, color: 'var(--text-secondary)', marginBottom: 8,
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <span><span style={{ color: 'var(--green)', fontWeight: 800 }}>Green</span> = matches {playerLookup[comparePlayerId]?.name}'s pick</span>
+                  <span><span style={{ color: 'var(--red)', fontWeight: 800 }}>Red</span> = differs from pick</span>
+                </div>
+              )}
+
               {remainingMatches.map(m => (
                 <ToggleMatchCard
                   key={m.matchNum}
                   match={m}
                   selected={selectedOutcomes[m.matchNum] || null}
                   onToggle={(team) => toggleOutcome(m.matchNum, team)}
+                  playerPick={comparePlayerId ? weekPredictions[comparePlayerId]?.[m.matchNum] : null}
                 />
               ))}
 
@@ -378,9 +419,16 @@ function LockedMatchCard({ match }) {
   )
 }
 
-function ToggleMatchCard({ match, selected, onToggle }) {
+function ToggleMatchCard({ match, selected, onToggle, playerPick }) {
   const { matchNum, home, away, date } = match
   const isActive = selected !== null
+
+  // Determine selection color based on player comparison
+  const getSelectionColor = (team) => {
+    if (!selected || selected !== team) return 'transparent'
+    if (!playerPick) return 'var(--green)' // no player selected — default green
+    return selected === playerPick ? 'var(--green)' : 'var(--red)'
+  }
 
   return (
     <div style={{
@@ -398,6 +446,15 @@ function ToggleMatchCard({ match, selected, onToggle }) {
         }}>
           Match {matchNum}{date ? ` · ${date}` : ''}
         </span>
+        {playerPick && (
+          <span style={{
+            fontSize: 8, fontWeight: 700, color: 'var(--text-secondary)',
+            background: 'rgba(255,255,255,0.06)',
+            padding: '2px 6px', borderRadius: 4,
+          }}>
+            Pick: {playerPick}
+          </span>
+        )}
       </div>
       <div style={{
         display: 'flex', borderRadius: 8, overflow: 'hidden',
@@ -412,7 +469,7 @@ function ToggleMatchCard({ match, selected, onToggle }) {
             fontSize: 12, fontWeight: 800,
             transition: 'all 0.25s ease',
             color: selected === home ? 'var(--bg)' : 'var(--text-secondary)',
-            background: selected === home ? 'var(--green)' : 'transparent',
+            background: getSelectionColor(home),
             opacity: selected && selected !== home ? 0.35 : 1,
           }}
         >
@@ -426,7 +483,7 @@ function ToggleMatchCard({ match, selected, onToggle }) {
             fontSize: 12, fontWeight: 800,
             transition: 'all 0.25s ease',
             color: selected === away ? 'var(--bg)' : 'var(--text-secondary)',
-            background: selected === away ? 'var(--green)' : 'transparent',
+            background: getSelectionColor(away),
             opacity: selected && selected !== away ? 0.35 : 1,
           }}
         >
