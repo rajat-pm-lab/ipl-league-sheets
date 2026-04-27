@@ -86,31 +86,6 @@ export default function LeaderboardTable({ leaderboard, activeTab = 'Weekly', we
             style={rowStyle}
             onClick={() => navigate(`/player/${row.playerId}`)}
           >
-            {/* Winner's pee stream — diagonal dashed line drifting right */}
-            {!isFirst && (() => {
-              const step = 14
-              const startX = 18 + (idx - 1) * step
-              return (
-                <>
-                  <svg style={{
-                    position: 'absolute', left: startX, top: -3,
-                    width: step + 4, height: 'calc(100% + 3px)',
-                    pointerEvents: 'none', zIndex: 0, overflow: 'visible',
-                  }}>
-                    <line x1="0" y1="0" x2={step} y2="100%"
-                      stroke="rgba(135,206,250,0.18)" strokeWidth="2"
-                      strokeDasharray="4 3" strokeLinecap="round" />
-                  </svg>
-                  {isLast && (
-                    <div style={{
-                      position: 'absolute', left: startX + step - 2, bottom: -4,
-                      fontSize: 10, opacity: 0.25, pointerEvents: 'none', zIndex: 0,
-                    }}>💧</div>
-                  )}
-                </>
-              )
-            })()}
-
             {/* Rank */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
               <div style={{
