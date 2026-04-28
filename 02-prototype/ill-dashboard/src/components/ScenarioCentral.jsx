@@ -258,7 +258,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                   fontSize: 8, color: 'var(--text-secondary)', marginBottom: 10,
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}>
-                  <span><span style={{ color: 'var(--green)', fontWeight: 800 }}>Green</span> = correct / matches {playerLookup[comparePlayerId]?.name}'s pick</span>
+                  <span><span style={{ color: 'var(--green)', fontWeight: 800 }}>Green</span> = correct / matches {playerLookup[Number(comparePlayerId)]?.name}'s pick</span>
                   <span><span style={{ color: 'var(--red)', fontWeight: 800 }}>Red</span> = wrong / differs from pick</span>
                 </div>
               )}
@@ -271,7 +271,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                     <LockedMatchCard
                       key={m.matchNum}
                       match={m}
-                      playerPick={comparePlayerId ? weekPredictions[comparePlayerId]?.[m.matchNum] : null}
+                      playerPick={comparePlayerId ? weekPredictions[Number(comparePlayerId)]?.[m.matchNum] : null}
                     />
                   ))}
                 </>
@@ -285,7 +285,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
                   match={m}
                   selected={selectedOutcomes[m.matchNum] || null}
                   onToggle={(team) => toggleOutcome(m.matchNum, team)}
-                  playerPick={comparePlayerId ? weekPredictions[comparePlayerId]?.[m.matchNum] : null}
+                  playerPick={comparePlayerId ? weekPredictions[Number(comparePlayerId)]?.[m.matchNum] : null}
                 />
               ))}
 
