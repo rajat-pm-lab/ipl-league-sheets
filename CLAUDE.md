@@ -16,10 +16,9 @@ It uses Google Sheets as the backend — no traditional database.
 
 ---
 
-## Current State (March 2026)
-- IPL 2026 season is **live** — Week 1 predictions are in
+## Current State (May 2026)
+- IPL 2026 season is **live** — Week 6 (Stage 2) starting
 - 12 players active (Utkarsh was removed)
-- 9 matches in Week 1 schedule; 3 have results so far
 - Scoring, leaderboard, and Picks tab are all functional
 
 ---
@@ -102,6 +101,17 @@ Rules are read from the Google Sheet `Rules` tab — **no code deploy needed to 
 Edit the `Rules` tab in Google Sheet:
 - Column `stage1`, `stage2`, `stage3` — points per stage
 - To add per-week rules, add a `week_N` column and handle in `lib/scoring.js`
+
+### Confidence Scoring (Week 3, Week 6)
+Players assign a confidence rating (1-N) to each match. No two matches share a rating.
+- **Correct pick:** +10 + confidence
+- **Wrong pick:** −confidence
+
+**Sheet format:** prediction columns + confidence columns named `Confidence Scores [TEAM1 - TEAM2]`
+- The `[TEAM1 - TEAM2]` bracket is matched against match schedule to link to correct match
+- Parsed by `lib/sheets.js` → stored as `_confidence: { matchNum: score }`
+- Scored by `lib/scoring.js` confidence block (lines 100-111)
+- Displayed in Picks tab with `×N` tag (PredictionsView.jsx)
 
 ---
 

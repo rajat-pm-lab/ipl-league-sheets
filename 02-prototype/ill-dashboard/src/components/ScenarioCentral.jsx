@@ -33,8 +33,6 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
   const weekScores = weeklyData?.[selectedWeek] || []
   const weekMatches = matchSchedule?.[selectedWeek] || []
   const weekPredictions = allPredictions?.[selectedWeek] || {}
-  const correctPts = 10
-
   // Split matches into completed vs remaining
   const completedMatches = weekMatches.filter(m => m.winner !== undefined && m.winner !== null)
   const remainingMatches = weekMatches.filter(m => m.winner === undefined || m.winner === null)
@@ -72,16 +70,19 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
       played: s.played,
     }))
 
-    // Apply each selected outcome
+    // Apply each selected outcome (respecting confidence scoring)
     for (const [matchNumStr, winner] of Object.entries(selectedOutcomes)) {
       const matchNum = Number(matchNumStr)
       projected.forEach(p => {
-        const pick = weekPredictions[p.playerId]?.[matchNum]
+        const playerPicks = weekPredictions[p.playerId] || {}
+        const pick = playerPicks[matchNum]
         if (!pick) return
+        const confidence = playerPicks._confidence?.[matchNum]
         if (pick === winner) {
-          p.points += correctPts
+          p.points += confidence !== undefined ? 10 + confidence : 10
           p.wins += 1
         } else {
+          if (confidence !== undefined) p.points -= confidence
           p.losses += 1
         }
         p.played += 1
@@ -95,7 +96,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
       if (i > 0 && (s.points !== sorted[i - 1].points || s.wins !== sorted[i - 1].wins)) rank = i + 1
       return { ...s, rank }
     })
-  }, [weekScores, selectedOutcomes, selectedCount, weekPredictions, currentRanked, correctPts])
+  }, [weekScores, selectedOutcomes, selectedCount, weekPredictions, currentRanked])
 
   const toggleOutcome = (matchNum, team) => {
     setSelectedOutcomes(prev => {
