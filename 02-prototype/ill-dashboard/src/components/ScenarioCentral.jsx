@@ -70,23 +70,48 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
       played: s.played,
     }))
 
-    // Apply each selected outcome (respecting confidence scoring)
+    // Apply each selected outcome
+    const isVendetta = selectedWeek === 7
     for (const [matchNumStr, winner] of Object.entries(selectedOutcomes)) {
       const matchNum = Number(matchNumStr)
-      projected.forEach(p => {
-        const playerPicks = weekPredictions[p.playerId] || {}
-        const pick = playerPicks[matchNum]
-        if (!pick) return
-        const confidence = playerPicks._confidence?.[matchNum]
-        if (pick === winner) {
-          p.points += confidence !== undefined ? 10 + confidence : 10
-          p.wins += 1
-        } else {
-          if (confidence !== undefined) p.points -= confidence
-          p.losses += 1
-        }
-        p.played += 1
-      })
+
+      if (isVendetta) {
+        // Vendetta: first count winners/losers, then assign points
+        let winnerCount = 0, loserCount = 0
+        projected.forEach(p => {
+          const pick = (weekPredictions[p.playerId] || {})[matchNum]
+          if (pick === winner) winnerCount++
+          else loserCount++
+        })
+        const vendettaPts = winnerCount > 0 ? Math.round((10 * loserCount) / winnerCount * 100) / 100 : 0
+        projected.forEach(p => {
+          const pick = (weekPredictions[p.playerId] || {})[matchNum]
+          if (!pick) { p.played += 1; p.losses += 1; return }
+          p.played += 1
+          if (pick === winner) {
+            p.points += vendettaPts
+            p.wins += 1
+          } else {
+            p.losses += 1
+          }
+        })
+      } else {
+        // Standard / confidence scoring
+        projected.forEach(p => {
+          const playerPicks = weekPredictions[p.playerId] || {}
+          const pick = playerPicks[matchNum]
+          if (!pick) return
+          const confidence = playerPicks._confidence?.[matchNum]
+          if (pick === winner) {
+            p.points += confidence !== undefined ? 10 + confidence : 10
+            p.wins += 1
+          } else {
+            if (confidence !== undefined) p.points -= confidence
+            p.losses += 1
+          }
+          p.played += 1
+        })
+      }
     }
 
     // Rank

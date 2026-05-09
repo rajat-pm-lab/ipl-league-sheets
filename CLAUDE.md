@@ -110,8 +110,16 @@ Players assign a confidence rating (1-N) to each match. No two matches share a r
 **Sheet format:** prediction columns + confidence columns named `Confidence Scores [TEAM1 - TEAM2]`
 - The `[TEAM1 - TEAM2]` bracket is matched against match schedule to link to correct match
 - Parsed by `lib/sheets.js` → stored as `_confidence: { matchNum: score }`
-- Scored by `lib/scoring.js` confidence block (lines 100-111)
+- Scored by `lib/scoring.js` confidence block
 - Displayed in Picks tab with `×N` tag (PredictionsView.jsx)
+
+### Vendetta Scoring (Week 7)
+The "Week of Vendetta" — contrarian picks are rewarded more.
+- **Correct pick:** `(10 * number of players who lost) / number of players who won`
+- **Wrong pick:** 0 points
+- **Example:** 5 winners, 7 losers → each winner gets (10×7)/5 = 14 pts. If all 12 win → (10×0)/12 = 0 pts.
+- No special sheet columns needed — just standard winner picks
+- Hardcoded to `weekNum === 7` in `lib/scoring.js` and `ScenarioCentral.jsx`
 
 ---
 
