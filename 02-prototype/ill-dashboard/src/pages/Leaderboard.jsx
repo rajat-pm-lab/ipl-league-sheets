@@ -170,12 +170,22 @@ export default function Leaderboard() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: 8, flexWrap: 'wrap',
             }}>
-              <span style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>Points:</span>
-              <RuleChip color="var(--green)" label={`✓ Correct +${weekRules.correct}`} />
-              <RuleChip color="var(--red)" label={`✗ Wrong ${weekRules.wrong}`} />
-              <RuleChip color="var(--grey)" label={`≈ No Result +${weekRules.noResult}`} />
-              {weekRules.note && (
-                <span style={{ fontSize: 9, color: 'var(--gold)', fontWeight: 600, fontStyle: 'italic' }}>{weekRules.note}</span>
+              {selectedWeek === 7 ? (
+                <>
+                  <span style={{ fontSize: 9, color: 'var(--gold)', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' }}>Vendetta:</span>
+                  <RuleChip color="var(--green)" label="✓ (10×Losers)÷Winners" />
+                  <RuleChip color="var(--red)" label="✗ Wrong 0" />
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>Points:</span>
+                  <RuleChip color="var(--green)" label={`✓ Correct +${weekRules.correct}`} />
+                  <RuleChip color="var(--red)" label={`✗ Wrong ${weekRules.wrong}`} />
+                  <RuleChip color="var(--grey)" label={`≈ No Result +${weekRules.noResult}`} />
+                  {weekRules.note && (
+                    <span style={{ fontSize: 9, color: 'var(--gold)', fontWeight: 600, fontStyle: 'italic' }}>{weekRules.note}</span>
+                  )}
+                </>
               )}
             </div>
           )}

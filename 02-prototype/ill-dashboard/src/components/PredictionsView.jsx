@@ -46,7 +46,14 @@ export default function PredictionsView({ selectedWeek, data }) {
         display: 'flex', flexWrap: 'wrap', gap: 6,
         padding: '8px 2px 12px',
       }}>
-        {hasTD ? (
+        {selectedWeek === 7 ? (
+          // Week 7: Vendetta
+          <>
+            <RuleChip label="🔥 Week of Vendetta" color="#FFD700" />
+            <RuleChip label="✓ (10×Losers)÷Winners" color="var(--green)" />
+            <RuleChip label="✗ Wrong 0" color="var(--text-secondary)" />
+          </>
+        ) : hasTD ? (
           // Week 4: Triple Dip + Cannibalisation
           <>
             <RuleChip label="✓ Correct +10" color="var(--green)" />
