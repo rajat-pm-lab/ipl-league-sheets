@@ -83,7 +83,7 @@ export default function ScenarioCentral({ weeklyData, players, selectedWeek, mat
           if (pick === winner) winnerCount++
           else loserCount++
         })
-        const vendettaPts = winnerCount > 0 ? Math.round((10 * loserCount) / winnerCount * 100) / 100 : 0
+        const vendettaPts = winnerCount > 0 ? Math.round((10 * loserCount) / winnerCount) : 0
         projected.forEach(p => {
           const pick = (weekPredictions[p.playerId] || {})[matchNum]
           if (!pick) { p.played += 1; p.losses += 1; return }
