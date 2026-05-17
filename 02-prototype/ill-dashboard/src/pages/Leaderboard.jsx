@@ -112,14 +112,33 @@ export default function Leaderboard() {
         </span>
       </div>
 
-      {/* Scenario Central */}
-      <ScenarioCentral
-        weeklyData={weeklyData}
-        players={players}
-        selectedWeek={data.currentWeek || 1}
-        matchSchedule={data.matchSchedule}
-        allPredictions={data.allPredictions}
-      />
+      {/* Scenario Central — disabled for Week 8 (dynamic scoring makes projections impossible) */}
+      {(data.currentWeek || 1) === 8 ? (
+        <div style={{
+          margin: '12px 12px 0', padding: '16px 14px',
+          background: 'var(--surface)', borderRadius: 14,
+          border: '1px solid rgba(255,255,255,0.05)',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 18, marginBottom: 6 }}>🎰</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--gold)', marginBottom: 6 }}>
+            Scenario Central Disabled
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            This week's scoring format is determined by actual match scores — you won't know
+            if a game is Normal, Double Dip, Triple Dip, Confidence, Vendetta, or Thala
+            until the last ball is bowled. Projections are impossible!
+          </div>
+        </div>
+      ) : (
+        <ScenarioCentral
+          weeklyData={weeklyData}
+          players={players}
+          selectedWeek={data.currentWeek || 1}
+          matchSchedule={data.matchSchedule}
+          allPredictions={data.allPredictions}
+        />
+      )}
 
       {/* Tabs */}
       <div style={{

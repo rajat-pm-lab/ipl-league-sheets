@@ -60,29 +60,40 @@ export function DataProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/sheets-data')
-      .then((res) => {
-        if (!res.ok) throw new Error(`API ${res.status}`)
-        return res.json()
-      })
-      .then((apiData) => {
-        setData({ ...apiData, _source: 'api' })
-      })
-      .catch((err) => {
-        console.warn('API failed, using static data:', err.message)
-        setData({
-          players: sampleData.PLAYERS,
-          iplTeams: sampleData.IPL_TEAMS,
-          stages: sampleData.STAGES,
-          weeklyData: sampleData.WEEKLY_DATA,
-          matchSchedule: sampleData.MATCH_SCHEDULE,
-          allPredictions: sampleData.ALL_PREDICTIONS,
-          cumulativePoints: sampleData.CUMULATIVE_POINTS,
-          currentWeek: 1,
-          _source: 'static',
+    let mounted = true
+
+    function fetchData() {
+      fetch('/api/sheets-data')
+        .then((res) => {
+          if (!res.ok) throw new Error(`API ${res.status}`)
+          return res.json()
         })
-      })
-      .finally(() => setLoading(false))
+        .then((apiData) => {
+          if (mounted) setData({ ...apiData, _source: 'api' })
+        })
+        .catch((err) => {
+          console.warn('API failed, using static data:', err.message)
+          if (mounted && !data) {
+            setData({
+              players: sampleData.PLAYERS,
+              iplTeams: sampleData.IPL_TEAMS,
+              stages: sampleData.STAGES,
+              weeklyData: sampleData.WEEKLY_DATA,
+              matchSchedule: sampleData.MATCH_SCHEDULE,
+              allPredictions: sampleData.ALL_PREDICTIONS,
+              cumulativePoints: sampleData.CUMULATIVE_POINTS,
+              currentWeek: 1,
+              _source: 'static',
+            })
+          }
+        })
+        .finally(() => { if (mounted) setLoading(false) })
+    }
+
+    fetchData()
+    // Auto-refresh every 30 seconds so match results appear quickly
+    const interval = setInterval(fetchData, 30_000)
+    return () => { mounted = false; clearInterval(interval) }
   }, [])
 
   return (

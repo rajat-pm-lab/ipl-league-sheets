@@ -2,12 +2,23 @@ import { useState } from 'react'
 import { IPL_TEAMS } from '../data/sampleData'
 import Avatar from './Avatar'
 
+// Week 8 format names and colors
+const WEEK8_FORMAT_META = {
+  2: { name: 'Normal', emoji: '🎯', color: '#94A3B8', rule: '+10 / 0' },
+  3: { name: 'Double Dip', emoji: '🎲', color: '#FCD34D', rule: '+20 / -10' },
+  4: { name: 'Triple Dip', emoji: '🚀', color: '#A78BFA', rule: '+30 / -20' },
+  5: { name: 'Confidence', emoji: '🧠', color: '#34D399', rule: '+(10+C) / -C' },
+  6: { name: 'Vendetta', emoji: '🔥', color: '#F97316', rule: '(10×L)÷W / 0' },
+  7: { name: 'Thala', emoji: '🫡', color: '#FFD700', rule: 'Reversed!' },
+}
+
 export default function PredictionsView({ selectedWeek, data }) {
   const players = data?.players || []
   const matches = (data?.matchSchedule || {})[selectedWeek] || []
   const weekPredictions = (data?.allPredictions || {})[selectedWeek] || {}
   const weekRules = (data?.weeklyRules || {})[selectedWeek] || {}
   const weekCannibResolution = (data?.cannibResolution || {})[selectedWeek] || {}
+  const week8Formats = data?.week8Formats || {}
 
   // Detect which mechanics this week has
   const allPicks = Object.values(weekPredictions)
@@ -16,6 +27,7 @@ export default function PredictionsView({ selectedWeek, data }) {
   const hasConfidence = allPicks.some((p) => p._confidence)
   const hasTD = allPicks.some((p) => p._tripleDips?.length > 0)
   const hasCannibalise = allPicks.some((p) => p._cannibalise)
+  const isWeek8 = selectedWeek === 8
 
   if (matches.length === 0) {
     return (
@@ -46,7 +58,13 @@ export default function PredictionsView({ selectedWeek, data }) {
         display: 'flex', flexWrap: 'wrap', gap: 6,
         padding: '8px 2px 12px',
       }}>
-        {selectedWeek === 7 ? (
+        {isWeek8 ? (
+          // Week 8: Lappa Roulette
+          <>
+            <RuleChip label="🎰 Lappa Roulette" color="#FFD700" />
+            <RuleChip label="Format = (R₁+R₂+W₁+W₂) mod 6 + 2" color="var(--text-secondary)" />
+          </>
+        ) : selectedWeek === 7 ? (
           // Week 7: Vendetta
           <>
             <RuleChip label="🔥 Week of Vendetta" color="#FFD700" />
@@ -100,6 +118,8 @@ export default function PredictionsView({ selectedWeek, data }) {
             players={players}
             cannibResolution={weekCannibResolution}
             hasTD={hasTD}
+            isWeek8={isWeek8}
+            week8Format={week8Formats[match.matchNum]}
           />
         ))}
       </div>
@@ -376,12 +396,14 @@ function StrategyTable({ weekPredictions, players, matches, cannibResolution, ha
   )
 }
 
-function MatchCard({ match, weekPredictions, players, cannibResolution = {}, hasTD = false }) {
+function MatchCard({ match, weekPredictions, players, cannibResolution = {}, hasTD = false, isWeek8 = false, week8Format = null }) {
   const [expanded, setExpanded] = useState(false)
   const isNoResult = match.winner === null
   const isPending = match.winner === undefined
   const homeTeam = IPL_TEAMS.find((t) => t.abbr === match.home)
   const awayTeam = IPL_TEAMS.find((t) => t.abbr === match.away)
+  const fmt = week8Format?.format
+  const fmtMeta = fmt ? WEEK8_FORMAT_META[fmt] : null
 
   // Count how many players have this as their Double Dip match
   const doubleDipCount = players.filter((p) => (weekPredictions[p.id] || {})._doubleDip === match.matchNum).length
@@ -432,13 +454,29 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
             <TeamBadge team={awayTeam} abbr={match.away} />
           </div>
           {!isPending && (
-            <div style={{ fontSize: 10, fontWeight: 700, marginTop: 3, color: isNoResult ? 'var(--blue)' : 'var(--green)' }}>
-              {isNoResult ? 'No Result — 0pts all' : `Winner: ${match.winner}`}
+            <div style={{ fontSize: 10, fontWeight: 700, marginTop: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: isNoResult ? 'var(--blue)' : 'var(--green)' }}>
+                {isNoResult ? 'No Result — 0pts all' : `Winner: ${match.winner}`}
+              </span>
+              {isWeek8 && fmtMeta && (
+                <span style={{
+                  fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4,
+                  color: fmtMeta.color, background: `${fmtMeta.color}18`,
+                  border: `1px solid ${fmtMeta.color}30`,
+                }}>
+                  {fmtMeta.emoji} {fmtMeta.name} ({fmtMeta.rule})
+                </span>
+              )}
             </div>
           )}
           {isPending && match.date && (
             <div style={{ fontSize: 10, fontWeight: 600, marginTop: 3, color: 'var(--text-secondary)' }}>
               {match.date}
+            </div>
+          )}
+          {isWeek8 && isPending && (
+            <div style={{ fontSize: 9, fontWeight: 600, marginTop: 3, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>
+              Format revealed after match ends
             </div>
           )}
         </div>
@@ -504,7 +542,10 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
               pts = '0'; pickMuted = true
 
             } else if (isPending) {
-              if (isTD) {
+              if (isWeek8 && confidence !== undefined) {
+                accentColor = '#D97706'
+                tag = { label: `×${confidence}`, color: '#FCD34D', bg: 'rgba(217,119,6,0.12)' }
+              } else if (isTD) {
                 accentColor = '#7C3AED'
                 tag = { label: tripleDipSlot === 0 ? 'TD1' : 'TD2', color: '#A78BFA', bg: 'rgba(124,58,237,0.14)' }
               } else if (confidence !== undefined) {
@@ -523,6 +564,46 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
               rowBg = 'rgba(59,130,246,0.04)'
               tag = { label: 'NR', color: '#93C5FD', bg: 'rgba(59,130,246,0.12)' }
               pts = '0'
+
+            } else if (isWeek8 && fmtMeta) {
+              // Week 8 dynamic format scoring display
+              const isCorrect = effectivePick === match.winner
+              const conf = confidence || 0
+              let matchPts = 0
+
+              if (fmt === 2) { matchPts = isCorrect ? 10 : 0 }
+              else if (fmt === 3) { matchPts = isCorrect ? 20 : -10 }
+              else if (fmt === 4) { matchPts = isCorrect ? 30 : -20 }
+              else if (fmt === 5) { matchPts = isCorrect ? (10 + conf) : -conf }
+              else if (fmt === 6) {
+                if (isCorrect) {
+                  // Vendetta: compute from all players' picks
+                  let wc = 0, lc = 0
+                  players.forEach((pl) => {
+                    const pp = weekPredictions[pl.id] || {}
+                    const plPick = pp[match.matchNum]
+                    if (!plPick) { lc++; return }
+                    if (plPick === match.winner) wc++; else lc++
+                  })
+                  matchPts = wc > 0 ? Math.round((10 * lc) / wc) : 0
+                } else { matchPts = 0 }
+              } else if (fmt === 7) {
+                // Thala: reversed
+                if (isCorrect) { matchPts = -conf }
+                else { matchPts = 10 + conf }
+              }
+
+              const displayWin = fmt === 7 ? !isCorrect : isCorrect
+              accentColor = displayWin ? fmtMeta.color : '#DC2626'
+              rowBg = displayWin ? `${fmtMeta.color}0A` : 'rgba(220,38,38,0.04)'
+              tag = { label: `${fmtMeta.emoji} ${fmtMeta.name}`, color: fmtMeta.color, bg: `${fmtMeta.color}18` }
+              if (effectivePick) {
+                pts = matchPts >= 0 ? `+${matchPts}` : `${matchPts}`
+                ptsColor = matchPts >= 0 ? '#34D399' : '#F87171'
+              }
+              if (confidence !== undefined && (fmt === 5 || fmt === 7)) {
+                tag = { label: `${fmtMeta.emoji} ${fmtMeta.name} ×${conf}`, color: fmtMeta.color, bg: `${fmtMeta.color}18` }
+              }
 
             } else if (isTD) {
               const tdCorrect = effectivePick === match.winner

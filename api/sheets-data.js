@@ -48,6 +48,24 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── Week 8 format data: compute dynamic format per match ──
+    const week8Formats = {};
+    const week8Matches = matchResults.filter((m) => m.week === 8);
+    for (const m of week8Matches) {
+      if (!m.winner || m.winner === 'NR') continue;
+      if (m.runsHome != null && m.runsAway != null && m.wicketsHome != null && m.wicketsAway != null) {
+        const total = m.runsHome + m.runsAway + m.wicketsHome + m.wicketsAway;
+        week8Formats[m.matchNum] = {
+          format: (total % 6) + 2,
+          runsHome: m.runsHome,
+          wicketsHome: m.wicketsHome,
+          runsAway: m.runsAway,
+          wicketsAway: m.wicketsAway,
+          total,
+        };
+      }
+    }
+
     // Compute weekly scores
     const weeklyData = {};
     for (const w of weeksWithMatches) {
@@ -215,7 +233,7 @@ export default async function handler(req, res) {
     }
 
     // Response
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+    res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=30');
     return res.status(200).json({
       players: PLAYERS,
       iplTeams: IPL_TEAMS,
@@ -231,6 +249,7 @@ export default async function handler(req, res) {
       teamAccuracy,
       teamFormData,
       cannibResolution,
+      week8Formats,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err) {
