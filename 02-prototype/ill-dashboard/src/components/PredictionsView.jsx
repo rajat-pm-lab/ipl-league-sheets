@@ -503,6 +503,9 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '6px 8px 10px', display: 'flex', flexDirection: 'column', gap: 3 }}>
           {players.map((p) => {
             const playerPicks = weekPredictions[p.id] || {}
+            // Check if player has ANY match predictions for this week (not just metadata keys)
+            const hasAnyPicks = Object.keys(playerPicks).some((k) => !k.startsWith('_'))
+            const isDefaulter = !hasAnyPicks
             const isLate = (playerPicks._lateMatches || []).includes(match.matchNum)
             const effectivePick = isLate ? null : playerPicks[match.matchNum]
             const pick = playerPicks[match.matchNum]  // always show what they picked (even if late)
@@ -529,7 +532,13 @@ function MatchCard({ match, weekPredictions, players, cannibResolution = {}, has
             let ptsColor = 'rgba(255,255,255,0.3)'
             let pickMuted = false
 
-            if (isLate) {
+            if (isDefaulter) {
+              accentColor = '#6B7280'
+              rowBg = 'rgba(107,114,128,0.04)'
+              tag = { label: '🚫 Defaulter', color: '#9CA3AF', bg: 'rgba(107,114,128,0.12)' }
+              pts = '0'; pickMuted = true
+
+            } else if (isLate) {
               accentColor = '#D97706'
               rowBg = 'rgba(217,119,6,0.04)'
               tag = { label: '⏰ Late', color: '#FCD34D', bg: 'rgba(217,119,6,0.14)' }
